@@ -1,0 +1,404 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>WebMCP DevTools - Test Page</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: system-ui, sans-serif;
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 40px 20px;
+      background: #f8fafc;
+      color: #1e293b;
+    }
+    h1 { color: #2563eb; margin-bottom: 8px; }
+    .subtitle { color: #64748b; margin-bottom: 32px; }
+    .card {
+      background: #fff;
+      border: 1px solid #e2e8f0;
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 16px;
+    }
+    .card h3 { margin-bottom: 4px; }
+    .card p { color: #64748b; font-size: 14px; margin-bottom: 12px; }
+    .badge {
+      display: inline-block;
+      font-size: 11px;
+      padding: 2px 8px;
+      border-radius: 99px;
+      font-weight: 500;
+    }
+    .badge--success { background: #dcfce7; color: #16a34a; }
+    .badge--warning { background: #fef3c7; color: #d97706; }
+    .badge--error { background: #fee2e2; color: #dc2626; }
+    .badge--info { background: #dbeafe; color: #2563eb; }
+    .status { margin-top: 24px; padding: 16px; border-radius: 8px; }
+    .status--ok { background: #dcfce7; border: 1px solid #16a34a; }
+    .status--err { background: #fee2e2; border: 1px solid #dc2626; }
+    button {
+      padding: 8px 16px;
+      border: 1px solid #e2e8f0;
+      border-radius: 6px;
+      background: #fff;
+      cursor: pointer;
+      font-size: 13px;
+      margin-right: 8px;
+      margin-top: 8px;
+    }
+    button:hover { background: #f1f5f9; }
+    button.primary { background: #2563eb; color: #fff; border-color: #2563eb; }
+    button.primary:hover { background: #1d4ed8; }
+    button.danger { background: #dc2626; color: #fff; border-color: #dc2626; }
+    button.danger:hover { background: #b91c1c; }
+    #log {
+      margin-top: 24px;
+      padding: 16px;
+      background: #0f172a;
+      color: #e2e8f0;
+      border-radius: 8px;
+      font-family: 'Cascadia Code', 'Fira Code', monospace;
+      font-size: 12px;
+      max-height: 300px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+    }
+  </style>
+</head>
+<body>
+  <h1>WebMCP DevTools — Test Page</h1>
+  <p class="subtitle">This page registers mock WebMCP tools for testing the extension.</p>
+
+  <div id="api-status"></div>
+
+  <h2 style="margin: 24px 0 12px;">Registered Tools</h2>
+
+  <div class="card">
+    <h3>search_flights <span class="badge badge--info">registered</span></h3>
+    <p>Search for flights between two airports on a specific date.</p>
+  </div>
+
+  <div class="card">
+    <h3>get_weather <span class="badge badge--success">read-only</span></h3>
+    <p>Get current weather information for a city.</p>
+  </div>
+
+  <div class="card">
+    <h3>create_task <span class="badge badge--info">registered</span></h3>
+    <p>Create a new task with priority, tags, and subtasks.</p>
+  </div>
+
+  <div class="card">
+    <h3>calculate_price <span class="badge badge--info">registered</span></h3>
+    <p>Calculate total price with tax and discount.</p>
+  </div>
+
+  <div class="card">
+    <h3>user_profile <span class="badge badge--warning">dynamic</span></h3>
+    <p>This tool can be registered/unregistered dynamically for testing.</p>
+  </div>
+
+  <div style="margin-top: 24px;">
+    <button id="btn-register-dynamic" class="primary">Register user_profile</button>
+    <button id="btn-unregister-dynamic" class="danger">Unregister user_profile</button>
+    <button id="btn-list">List All Tools</button>
+  </div>
+
+  <div id="log"></div>
+
+  <script>
+    const log = document.getElementById('log');
+    function logMsg(msg) {
+      const time = new Date().toLocaleTimeString('en-US', { hour12: false });
+      log.textContent += `[${time}] ${msg}\n`;
+      log.scrollTop = log.scrollHeight;
+    }
+
+    function getModelContext() {
+      return navigator.modelContext || navigator.modelContextTesting || null;
+    }
+
+    const statusEl = document.getElementById('api-status');
+    const mc = getModelContext();
+
+    if (!mc) {
+      statusEl.innerHTML = `
+        <div class="status status--err">
+          <strong>WebMCP API not available.</strong><br>
+          Enable <code>chrome://flags/#enable-webmcp-testing</code> and restart Chrome.
+        </div>
+      `;
+      logMsg('ERROR: WebMCP API not found. Tools will NOT be registered.');
+      logMsg('This page will still load but the extension cannot detect tools.');
+    } else {
+      statusEl.innerHTML = `
+        <div class="status status--ok">
+          <strong>WebMCP API available!</strong> Tools will be registered automatically.
+        </div>
+      `;
+      logMsg('WebMCP API detected. Registering mock tools...');
+      registerAllTools();
+    }
+
+    let dynamicAbortController = null;
+
+    function registerAllTools() {
+      // Tool 1: search_flights — multiple string params with enum
+      mc.registerTool({
+        name: 'search_flights',
+        description: 'Search for flights between two airports on a specific date.',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            origin: {
+              type: 'string',
+              description: 'Origin airport IATA code (e.g. SFO)',
+            },
+            destination: {
+              type: 'string',
+              description: 'Destination airport IATA code (e.g. JFK)',
+            },
+            date: {
+              type: 'string',
+              format: 'date',
+              description: 'Travel date in YYYY-MM-DD format',
+            },
+            cabin_class: {
+              type: 'string',
+              enum: ['economy', 'premium_economy', 'business', 'first'],
+              description: 'Cabin class preference',
+            },
+            max_stops: {
+              type: 'integer',
+              minimum: 0,
+              maximum: 3,
+              description: 'Maximum number of stops (0 = direct only)',
+            },
+          },
+          required: ['origin', 'destination', 'date'],
+        },
+        execute: async (args) => {
+          return {
+            flights: [
+              { airline: 'UA', flight: 'UA123', price: 450, stops: 0, duration: '5h 30m' },
+              { airline: 'AA', flight: 'AA456', price: 380, stops: 1, duration: '7h 15m' },
+            ],
+            query: args,
+          };
+        },
+      });
+      logMsg('Registered: search_flights');
+
+      // Tool 2: get_weather — simple params, read-only
+      mc.registerTool(
+        {
+          name: 'get_weather',
+          description: 'Get current weather information for a city.',
+          inputSchema: {
+            type: 'object',
+            properties: {
+              city: {
+                type: 'string',
+                description: 'City name (e.g. "San Francisco")',
+              },
+              units: {
+                type: 'string',
+                enum: ['celsius', 'fahrenheit'],
+                description: 'Temperature unit',
+              },
+            },
+            required: ['city'],
+          },
+          annotations: { readOnlyHint: true },
+          execute: async (args) => {
+            return {
+              city: args.city,
+              temperature: 22,
+              units: args.units || 'celsius',
+              condition: 'Partly Cloudy',
+              humidity: 65,
+              wind: '12 km/h NW',
+            };
+          },
+        },
+      );
+      logMsg('Registered: get_weather (read-only)');
+
+      // Tool 3: create_task — nested object + array
+      mc.registerTool({
+        name: 'create_task',
+        description: 'Create a new task with priority, tags, and subtasks.',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            title: {
+              type: 'string',
+              description: 'Task title',
+            },
+            description: {
+              type: 'string',
+              description: 'Detailed task description',
+            },
+            priority: {
+              type: 'string',
+              enum: ['low', 'medium', 'high', 'critical'],
+              description: 'Task priority level',
+            },
+            due_date: {
+              type: 'string',
+              format: 'date',
+              description: 'Due date in YYYY-MM-DD format',
+            },
+            tags: {
+              type: 'array',
+              items: { type: 'string' },
+              description: 'List of tags',
+            },
+            assignee: {
+              type: 'object',
+              description: 'Person assigned to this task',
+              properties: {
+                name: { type: 'string', description: 'Full name' },
+                email: { type: 'string', description: 'Email address' },
+              },
+              required: ['name'],
+            },
+            subtasks: {
+              type: 'array',
+              description: 'List of subtasks',
+              items: {
+                type: 'object',
+                properties: {
+                  title: { type: 'string', description: 'Subtask title' },
+                  done: { type: 'boolean', description: 'Whether completed' },
+                },
+                required: ['title'],
+              },
+            },
+          },
+          required: ['title', 'priority'],
+        },
+        execute: async (args) => {
+          return { id: 'task_' + Date.now(), created: true, ...args };
+        },
+      });
+      logMsg('Registered: create_task (nested object + array)');
+
+      // Tool 4: calculate_price — numbers with constraints
+      mc.registerTool({
+        name: 'calculate_price',
+        description: 'Calculate total price with tax and discount.',
+        inputSchema: {
+          type: 'object',
+          properties: {
+            base_price: {
+              type: 'number',
+              minimum: 0,
+              description: 'Base price in USD',
+            },
+            quantity: {
+              type: 'integer',
+              minimum: 1,
+              maximum: 100,
+              description: 'Number of items',
+            },
+            tax_rate: {
+              type: 'number',
+              minimum: 0,
+              maximum: 1,
+              description: 'Tax rate as a decimal (e.g. 0.08 for 8%)',
+            },
+            discount_percent: {
+              type: 'number',
+              minimum: 0,
+              maximum: 100,
+              description: 'Discount percentage (0-100)',
+            },
+            apply_member_discount: {
+              type: 'boolean',
+              description: 'Apply additional member discount (5%)',
+            },
+          },
+          required: ['base_price', 'quantity'],
+        },
+        execute: async (args) => {
+          const subtotal = args.base_price * args.quantity;
+          const discount = subtotal * ((args.discount_percent || 0) / 100);
+          const memberDiscount = args.apply_member_discount ? subtotal * 0.05 : 0;
+          const afterDiscount = subtotal - discount - memberDiscount;
+          const tax = afterDiscount * (args.tax_rate || 0);
+          return {
+            subtotal,
+            discount,
+            memberDiscount,
+            tax,
+            total: afterDiscount + tax,
+          };
+        },
+      });
+      logMsg('Registered: calculate_price (numbers + boolean)');
+    }
+
+    // Dynamic tool registration/unregistration
+    document.getElementById('btn-register-dynamic').addEventListener('click', () => {
+      if (!mc) { logMsg('ERROR: WebMCP API not available'); return; }
+      if (dynamicAbortController) { logMsg('user_profile is already registered'); return; }
+
+      dynamicAbortController = new AbortController();
+      mc.registerTool(
+        {
+          name: 'user_profile',
+          description: 'Get or update user profile information.',
+          inputSchema: {
+            type: 'object',
+            properties: {
+              user_id: { type: 'string', description: 'User ID' },
+              action: { type: 'string', enum: ['get', 'update'], description: 'Action to perform' },
+              updates: {
+                type: 'object',
+                description: 'Fields to update (only for action=update)',
+                properties: {
+                  display_name: { type: 'string' },
+                  bio: { type: 'string' },
+                  avatar_url: { type: 'string' },
+                },
+              },
+            },
+            required: ['user_id', 'action'],
+          },
+          execute: async (args) => {
+            return { user_id: args.user_id, display_name: 'Test User', bio: 'Hello!', action: args.action };
+          },
+        },
+        { signal: dynamicAbortController.signal },
+      );
+      logMsg('Registered: user_profile (dynamic, with AbortSignal)');
+    });
+
+    document.getElementById('btn-unregister-dynamic').addEventListener('click', () => {
+      if (!dynamicAbortController) { logMsg('user_profile is not registered'); return; }
+      dynamicAbortController.abort();
+      dynamicAbortController = null;
+      logMsg('Unregistered: user_profile (AbortSignal aborted)');
+    });
+
+    document.getElementById('btn-list').addEventListener('click', async () => {
+      if (!mc) { logMsg('ERROR: WebMCP API not available'); return; }
+      try {
+        const tools = mc.listTools?.();
+        if (tools) {
+          logMsg('listTools() returned ' + tools.length + ' tools:');
+          tools.forEach(t => logMsg('  - ' + t.name));
+        } else {
+          logMsg('listTools() not available');
+        }
+      } catch (e) {
+        logMsg('listTools() error: ' + e);
+      }
+    });
+  </script>
+</body>
+</html>

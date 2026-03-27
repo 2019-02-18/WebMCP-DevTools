@@ -1,0 +1,484 @@
+---
+alwaysApply: true
+---
+# WebMCP DevTools — Chrome 扩展完整开发指令
+
+## 你的角色
+你是资深 Chrome 扩展开发者，精通 Manifest V3、TypeScript、WebMCP API（navigator.modelContext）、Shadow DOM、Chrome Side Panel API。你将从零构建一个名为 WebMCP DevTools 的 Chrome 扩展。
+
+---
+
+## 一、产品概述
+
+### 名称
+WebMCP DevTools
+
+### 定位
+面向前端开发者的 WebMCP 调试工具。帮助开发者查看、监控、测试页面上通过 navigator.modelContext 注册的所有 WebMCP 工具。类似于 "WebMCP 的 Postman + DevTools"。
+
+### 目标用户
+正在接入或计划接入 WebMCP 的前端开发者、全栈工程师、AI Agent 开发者。
+
+### 竞品
+1. Model Context Tool Inspector（Google 半官方，~7000 用户）— UI 简陋、无实时监控、Schema 以原始 JSON 展示、只支持 Gemini、无 Context 查看、频繁出连接 bug
+2. WebMCP Inspector（独立开发者，用户极少）— 支持多 AI Provider 但功能早期
+
+### 核心竞争优势
+1. Schema 可视化表单（Swagger UI 风格）
+2. 实时事件时间线（registerTool/unregisterTool/provideContext 全部拦截记录）
+3. Context 面板（展示 provideContext 提供的上下文数据）
+4. 多 AI Provider 支持（用户自带 API Key：Gemini/OpenAI/Claude/DeepSeek）
+5. 工具定义 Diff 对比（快照 + 差异比较）
+6. 一键导出（JSON / Markdown / Postman Collection）
+
+---
+
+## 二、核心原则
+
+1. 纯前端，零后端依赖，离线核心功能可用（AI 功能除外）
+2. AI 为可选增强，用户自行配置 API Key
+3. 性能优先，Side Panel 渲染流畅，不卡页面
+4. 完全遵循 Manifest V3 规范与 Chrome Web Store 审核要求
+5. 不使用外部 CDN，不使用 eval，不加载远程代码
+6. 支持暗色/亮色主题，跟随系统 prefers-color-scheme
+
+---
+
+## 三、技术栈
+
+- 框架: WXT (https://wxt.dev) — 自动生成 manifest，热重载，TypeScript 一等支持
+- 语言: TypeScript（严格模式）
+- UI: 原生 DOM + CSS（Side Panel 中渲染，不引入 React/Vue 以减小体积）
+- 构建: WXT 内置 Vite
+- 包管理: pnpm
+
+---
+
+## 四、WebMCP API 参考（当前实验性 flag: chrome://flags/#enable-webmcp-testing）
+
+注意：当前 Chrome 146 的测试 API 挂在 navigator.modelContextTesting 上，正式版将为 navigator.modelContext。代码中应同时兼容两者：
+
+function getModelContext(): any | null {
+  return (navigator as any).modelContext || (navigator as any).modelContextTesting || null;
+}
+
+### 关键 API：
+- navigator.modelContext.registerTool(tool, options?) — 注册工具
+- navigator.modelContext.listTools() — 列出已注册工具（测试 API）
+- navigator.modelContext.executeTool(name, inputArgs) — 执行工具（测试 API）
+- 每个 tool 包含: name(string), description(string), inputSchema(string, JSON Schema), annotations?({ readOnlyHint: boolean })
+- toolchange 事件 — 工具注册/注销时触发
+
+### 声明式 WebMCP（HTML Form）：
+<form toolname="search_flights" tooldescription="Search flights">
+  <input name="origin" type="text" />
+</form>
+
+---
+
+## 五、功能规格（V1 MVP）
+
+### 模块 A：工具列表面板（Tools Panel）
+- 打开 Side Panel 后，自动扫描当前页面已注册的 WebMCP 工具
+- 以卡片列表形式展示每个工具：
+  - 工具名称（加粗）
+  - 描述文本
+  - readOnlyHint 标签（如为 true 显示只读标记）
+  - inputSchema 的可折叠树形视图（非原始 JSON），参考 JSON Schema 展示：
+    - 属性名、类型、是否 required、默认值、enum 可选值、description
+    - 嵌套 object/array 可折叠展开
+- 工具数量显示在扩展图标的 Badge 上（如 "3"）
+- 无工具时显示友好提示："当前页面未注册任何 WebMCP 工具。请确认已启用 WebMCP for testing flag。"
+- 支持关键字搜索/过滤工具列表
+
+### 模块 B：工具执行面板（Tool Executor）
+- 选中一个工具后，根据其 inputSchema 自动生成交互式表单（Schema 转 Form）：
+  - string 转 text input（如有 enum 转 select dropdown）
+  - number/integer 转 number input（支持 min/max）
+  - boolean 转 checkbox/toggle
+  - object 转 嵌套表单区域（可折叠）
+  - array 转 动态添加/删除项
+  - 日期格式 转 date picker
+- 同时保留"原始 JSON 编辑"模式（textarea），开发者可切换
+- "执行" 按钮调用 executeTool(name, inputArgs)
+- 执行结果以语法高亮 JSON 展示（带折叠）
+- 显示执行耗时（ms）
+- 执行历史记录（最近 20 次），可点击回放
+
+### 模块 C：实时事件时间线（Event Timeline）
+- Content Script 在 document_start 注入 main world 脚本（通过 chrome.scripting.executeScript + world: MAIN），拦截：
+  - navigator.modelContext.registerTool — 记录注册事件
+  - navigator.modelContext.unregisterTool — 记录注销事件（通过 AbortSignal 监听）
+  - toolchange 事件
+- 时间线 UI 以列表形式展示：
+  - 时间戳（精确到 ms）
+  - 事件类型（Register / Unregister / ToolChange）
+  - 工具名称
+  - 简要数据预览（点击展开完整数据）
+- 支持清空时间线
+- 新事件出现时自动滚动到底部并高亮闪烁
+
+### 模块 D：导出功能
+- Copy as JSON — 复制所有工具定义为 JSON 数组
+- Copy as Markdown — 生成工具文档：每个工具的名称、描述、参数表格
+- Export Postman Collection — 生成 Postman Collection v2.1 格式 JSON 文件下载
+- Copy as ScriptToolConfig — 兼容 Google 的格式
+
+### 模块 E：快照与 Diff 对比
+- Save Snapshot 按钮保存当前页面所有工具定义到 chrome.storage.local
+- 快照管理列表（名称 + 时间 + 页面 URL）
+- 选择两个快照进行 Diff 对比：
+  - 新增的工具（绿色）
+  - 删除的工具（红色）
+  - 修改的工具（黄色高亮变更字段）
+- 最多保存 20 个快照，超出自动删除最旧的
+
+### 模块 F：设置页（Options）
+- AI Provider 配置：
+  - Provider 选择（Gemini / OpenAI / Claude / DeepSeek / Custom）
+  - API Key 输入（密码字段，存入 chrome.storage.local）
+  - Model 名称输入（默认值随 Provider 变化）
+  - 测试连接按钮验证 Key 有效性
+- 主题设置：跟随系统 / 强制亮色 / 强制暗色
+- 导出格式默认偏好
+
+---
+
+## 六、V1 不做（明确排除）
+- AI 对话 / AI 自动调用工具（留 V2）
+- 声明式 WebMCP（form 属性）的扫描与解析（留 V2）
+- 跨页面工具聚合（留 V2）
+- 远程工具注册代码生成（留 V2）
+- 国际化 i18n（留 V2，V1 默认英文界面）
+
+---
+
+## 七、架构设计
+
+### 通信流程
+
+[Page JS (MAIN world)]
+    通过 window.postMessage('WEBMCP_DEVTOOLS_EVENT', data)
+[Content Script (ISOLATED world)]
+    通过 chrome.runtime.sendMessage
+[Service Worker (background)]
+    通过 chrome.runtime.sendMessage / chrome.tabs.sendMessage
+[Side Panel (sidebar)]
+
+### 关键实现细节
+
+#### 1. Main World 注入（拦截 registerTool）
+必须通过 chrome.scripting.executeScript({ world: 'MAIN' }) 注入，因为 navigator.modelContext 只在 main world 可访问。注入脚本需要：
+- 保存原始 registerTool 引用
+- Monkey-patch registerTool，在调用原始方法前/后发送 window.postMessage 事件到 Content Script
+- 同理 patch unregisterTool（如果存在）
+- 监听 toolchange 事件并转发
+
+注入到 MAIN world 的脚本逻辑（伪代码）：
+const mc = navigator.modelContext || navigator.modelContextTesting;
+if (mc) {
+  const origRegister = mc.registerTool.bind(mc);
+  mc.registerTool = function(tool, options) {
+    window.postMessage({
+      type: 'WEBMCP_DEVTOOLS_EVENT',
+      event: 'REGISTER_TOOL',
+      timestamp: performance.now(),
+      tool: { name: tool.name, description: tool.description, inputSchema: tool.inputSchema, annotations: tool.annotations }
+    }, '*');
+    return origRegister(tool, options);
+  };
+}
+
+#### 2. Content Script（ISOLATED world）
+- 监听 window.addEventListener('message') 接收 Main World 事件
+- 通过 chrome.runtime.sendMessage 转发给 Service Worker
+- 响应 Side Panel 发来的 LIST_TOOLS / EXECUTE_TOOL 请求（通过 chrome.tabs.sendMessage）
+
+#### 3. Service Worker（background.ts）
+- chrome.sidePanel.setPanelBehavior({ openPanelOnActionClick: true })
+- 转发 Content Script 的消息到 Side Panel
+- 管理 Badge 数字更新
+- 处理 tab 切换时的工具刷新
+
+#### 4. Side Panel（sidebar）
+- 入口 HTML + TypeScript
+- 监听 chrome.runtime.onMessage 接收工具数据
+- 所有 UI 渲染逻辑在此
+
+---
+
+## 八、项目文件结构
+
+webmcp-devtools/
+├── entrypoints/
+│   ├── background.ts              # Service Worker
+│   ├── content.ts                 # Content Script (ISOLATED)
+│   ├── injected.ts                # Main World 注入脚本（拦截 registerTool）
+│   ├── sidepanel/
+│   │   ├── index.html             # Side Panel 入口
+│   │   ├── main.ts                # Side Panel 主逻辑
+│   │   └── styles.css             # Side Panel 样式
+│   ├── options/
+│   │   ├── index.html             # 设置页
+│   │   └── main.ts
+│   └── popup/
+│       ├── index.html             # Popup（简单状态显示 + 链接到 Side Panel）
+│       └── main.ts
+├── lib/
+│   ├── types.ts                   # 共享类型定义
+│   ├── schema-renderer.ts         # JSON Schema 转 树形视图渲染
+│   ├── schema-form.ts             # JSON Schema 转 交互式表单生成
+│   ├── json-highlight.ts          # JSON 语法高亮
+│   ├── diff.ts                    # 工具定义 Diff 算法
+│   ├── export.ts                  # 导出功能（JSON/Markdown/Postman）
+│   ├── storage.ts                 # chrome.storage 封装
+│   ├── messaging.ts               # 消息通信协议定义与辅助函数
+│   ├── theme.ts                   # 主题管理
+│   └── ai-providers/
+│       ├── base.ts                # AI Provider 抽象接口
+│       ├── gemini.ts
+│       ├── openai.ts
+│       ├── claude.ts
+│       └── deepseek.ts
+├── public/
+│   └── icons/
+│       ├── icon-16.png
+│       ├── icon-32.png
+│       ├── icon-48.png
+│       └── icon-128.png
+├── wxt.config.ts
+├── package.json
+├── tsconfig.json
+└── README.md
+
+---
+
+## 九、消息协议
+
+所有跨层通信使用统一消息格式：
+
+// Main World 转 Content Script (via window.postMessage)
+interface WebMCPDevToolsEvent {
+  type: 'WEBMCP_DEVTOOLS_EVENT';
+  event: 'REGISTER_TOOL' | 'UNREGISTER_TOOL' | 'TOOL_CHANGE' | 'TOOLS_LIST';
+  timestamp: number;
+  data: any;
+}
+
+// Content Script 和 Service Worker 和 Side Panel (via chrome.runtime)
+interface ChromeMessage {
+  action: 'LIST_TOOLS' | 'EXECUTE_TOOL' | 'TOOL_EVENT' | 'GET_SNAPSHOTS' | 'SAVE_SNAPSHOT' | 'DELETE_SNAPSHOT';
+  payload?: any;
+}
+
+// 工具定义（通信用，不含 execute 回调）
+interface ToolInfo {
+  name: string;
+  description: string;
+  inputSchema?: string;
+  annotations?: { readOnlyHint?: boolean };
+}
+
+// 时间线事件
+interface TimelineEvent {
+  id: string;
+  timestamp: number;
+  type: 'register' | 'unregister' | 'toolchange';
+  toolName: string;
+  data?: ToolInfo;
+}
+
+// 快照
+interface Snapshot {
+  id: string;
+  name: string;
+  url: string;
+  timestamp: number;
+  tools: ToolInfo[];
+}
+
+// 执行历史
+interface ExecutionRecord {
+  id: string;
+  toolName: string;
+  input: any;
+  output: any;
+  duration: number;
+  timestamp: number;
+  success: boolean;
+}
+
+---
+
+## 十、chrome.storage 数据方案
+
+存储在 chrome.storage.local 中：
+
+snapshots: Snapshot[]                    // 快照列表（最多 20 个）
+ai_provider: "gemini" | "openai" | "claude" | "deepseek" | "custom"
+ai_api_key: string
+ai_model: string
+ai_base_url: string                      // custom provider 使用
+theme: "system" | "light" | "dark"
+export_format: "json" | "markdown" | "postman"
+execution_history: ExecutionRecord[]     // 最近 20 条
+
+---
+
+## 十一、开发顺序（严格按阶段执行，每阶段完成后暂停等待确认）
+
+### 阶段 1：项目骨架（0.5 天）
+1. pnpm create wxt@latest webmcp-devtools 初始化项目
+2. 配置 wxt.config.ts：
+   - manifest 权限: sidePanel, activeTab, scripting, storage
+   - host_permissions: <all_urls>
+   - content_scripts: matches ["<all_urls>"], runAt "document_start"
+3. 创建所有目录和空文件
+4. 实现最简 background.ts（chrome.sidePanel.setPanelBehavior）
+5. 实现最简 sidepanel/index.html + main.ts（显示 "WebMCP DevTools" 标题）
+6. 构建、加载到 Chrome，验证 Side Panel 能打开
+7. 暂停，截图确认
+
+### 阶段 2：核心工具扫描与展示（1.5 天）
+1. 实现 injected.ts（Main World 脚本）：
+   - 检测 navigator.modelContext 或 navigator.modelContextTesting
+   - Monkey-patch registerTool，发送 window.postMessage
+   - 监听 toolchange 事件
+   - 调用 listTools() 获取已有工具并发送
+2. 实现 content.ts：
+   - 通过 chrome.scripting.executeScript({ world: 'MAIN' }) 或内联注入
+   - 监听 window.message 转发给 background
+   - 响应 LIST_TOOLS / EXECUTE_TOOL 消息
+3. 实现 background.ts 完整消息路由
+4. 实现 sidepanel/main.ts 接收并展示工具列表（先用简单 HTML 渲染）
+5. Badge 显示工具数量
+6. 在 WebMCP demo 页验证能扫描到工具
+7. 暂停，截图确认
+
+### 阶段 3：Schema 可视化 + 表单生成（2 天）核心差异化
+1. 实现 lib/schema-renderer.ts：
+   - 输入: JSON Schema string
+   - 输出: 可折叠树形 DOM，展示属性名、类型、required 标记、默认值、描述、enum
+   - 嵌套 object/array 支持折叠展开
+   - 样式美观，参考 Swagger UI 的参数展示风格
+2. 实现 lib/schema-form.ts：
+   - 输入: JSON Schema string
+   - 输出: 交互式表单 DOM
+   - 类型映射: string转input, number转number input, boolean转toggle, enum转select, object转嵌套, array转动态列表
+   - date 格式转 date picker
+   - 实时验证（required 字段、类型校验）
+   - getFormValues() 方法返回 JSON 对象
+3. 实现 lib/json-highlight.ts：
+   - JSON 语法高亮渲染（key 蓝色、string 绿色、number 橙色、boolean 紫色、null 灰色）
+   - 支持折叠/展开
+4. 集成到 Side Panel：
+   - 工具卡片中嵌入 Schema 树形视图
+   - 工具执行区域使用表单模式（可切换到 raw JSON 模式）
+   - 执行结果用语法高亮展示
+   - 执行耗时显示
+5. 暂停，截图确认
+
+### 阶段 4：事件时间线（1 天）
+1. 完善 injected.ts 的拦截逻辑：
+   - 为每个事件生成唯一 ID 和精确时间戳
+   - registerTool 和 unregisterTool（AbortSignal 触发时）都捕获
+2. Side Panel 新增 Timeline Tab：
+   - 事件列表：时间戳 | 类型图标 | 工具名称 | 数据预览
+   - 点击展开完整数据
+   - 新事件自动滚动到底部 + 高亮闪烁动画
+   - 清空按钮
+3. 暂停，截图确认
+
+### 阶段 5：导出 + 快照 + Diff（1 天）
+1. 实现 lib/export.ts：
+   - exportAsJSON(tools) 转 JSON 字符串
+   - exportAsMarkdown(tools) 转 Markdown 文档（标题 + 描述 + 参数表格）
+   - exportAsPostman(tools) 转 Postman Collection v2.1 JSON
+   - exportAsScriptToolConfig(tools) 转 Google 格式
+2. Side Panel 工具列表区域添加导出按钮
+3. 实现 lib/storage.ts + 快照管理：
+   - 保存/加载/删除快照
+   - 快照列表 UI
+4. 实现 lib/diff.ts：
+   - 对比两组 ToolInfo[]，输出新增/删除/修改
+   - Diff 面板 UI（绿/红/黄高亮）
+5. 暂停，截图确认
+
+### 阶段 6：设置页 + 主题 + 完善（1 天）
+1. 实现 options 页面：
+   - AI Provider 配置表单
+   - 主题选择
+   - 导出偏好
+2. 实现 lib/theme.ts：
+   - 检测系统偏好
+   - 动态切换 CSS 变量
+3. 实现执行历史面板（最近 20 条记录列表）
+4. 错误边界处理：
+   - WebMCP API 不可用时的友好提示
+   - Content Script 注入失败时的降级
+   - chrome:// 等受限页面的处理
+5. 全功能测试：
+   - 在 Google WebMCP demo 页测试全部功能
+   - 在无 WebMCP 的普通页面测试降级
+   - 暗色/亮色主题切换
+   - 快照保存/加载/对比
+   - 所有导出格式验证
+6. 暂停，截图确认
+
+---
+
+## 十二、UI 设计规范
+
+### 色彩方案
+- 主色: #2563EB (蓝色)
+- 成功: #16A34A (绿色)
+- 警告: #F59E0B (琥珀色)
+- 错误: #DC2626 (红色)
+- 背景(亮): #FFFFFF, 面板背景: #F9FAFB
+- 背景(暗): #0F172A, 面板背景: #1E293B
+- 文字(亮): #1E293B, 次要: #64748B
+- 文字(暗): #E2E8F0, 次要: #94A3B8
+
+### 布局
+- Side Panel 宽度由 Chrome 控制（通常约 400px）
+- 顶部 Tab 栏: Tools | Execute | Timeline | Snapshots
+- 每个 Tab 内容区可滚动
+- 底部状态栏: 连接状态 + WebMCP API 版本 + 工具数量
+
+### 字体
+- UI 文字: system-ui, -apple-system, sans-serif
+- 代码/JSON: 'SF Mono', 'Fira Code', 'Cascadia Code', monospace
+- 基础字号: 13px（Side Panel 空间有限）
+
+---
+
+## 十三、Manifest 权限说明（Chrome Web Store 审核用）
+
+permissions: sidePanel, activeTab, scripting, storage
+host_permissions: <all_urls>
+
+- sidePanel: 使用 Chrome Side Panel API 展示工具面板
+- activeTab: 访问当前活动标签页
+- scripting: 注入 Content Script 和 Main World 脚本以拦截 WebMCP API
+- storage: 保存用户设置、快照和执行历史
+- <all_urls>: 需要在任意页面检测 WebMCP 工具
+
+---
+
+## 十四、隐私政策要点
+- 不收集任何用户数据
+- API Key 仅存储在本地 chrome.storage.local，不上传
+- 不包含任何追踪代码或分析工具
+- 所有功能在本地执行
+
+---
+
+## 十五、重要注意事项
+
+1. 兼容性: 当前 WebMCP API 挂在 navigator.modelContextTesting（测试 flag），未来会迁移到 navigator.modelContext。代码中必须同时检查两者。
+2. Main World 注入时机: 必须在页面 JS 执行前注入拦截代码，使用 document_start + world MAIN。
+3. 安全: 不要在 injected.ts 中访问 chrome.* API（Main World 没有权限），所有通信通过 window.postMessage。
+4. 体积: 保持扩展体积小（小于 500KB），不引入大型框架。
+5. Tab 切换: 用户切换 tab 时 Side Panel 内容需要刷新为新 tab 的工具数据。
+
+---

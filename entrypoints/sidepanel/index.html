@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>WebMCP DevTools</title>
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <div id="app">
+    <header class="header">
+      <h1 class="header__title" data-i18n="header.title">WebMCP DevTools</h1>
+      <div class="header__actions">
+        <button id="theme-toggle" class="theme-toggle" title="Toggle Theme"></button>
+        <button id="lang-toggle" class="lang-toggle" title="Switch Language">
+          <span data-i18n="lang.current">EN</span>
+        </button>
+      </div>
+    </header>
+
+    <nav class="tab-bar">
+      <button class="tab-bar__tab tab-bar__tab--active" data-tab="tools" data-i18n="tab.tools">Tools</button>
+      <button class="tab-bar__tab" data-tab="execute" data-i18n="tab.execute">Execute</button>
+      <button class="tab-bar__tab" data-tab="timeline" data-i18n="tab.timeline">Timeline</button>
+      <button class="tab-bar__tab" data-tab="history" data-i18n="history.title">History</button>
+      <button class="tab-bar__tab" data-tab="snapshots" data-i18n="tab.snapshots">Snapshots</button>
+    </nav>
+
+    <main class="content">
+      <section id="panel-tools" class="panel panel--active">
+        <div class="panel__toolbar">
+          <input type="text" id="tools-search" class="search-input" data-i18n-placeholder="tools.search_placeholder" placeholder="Search tools..." />
+          <div id="tools-export" class="dropdown"></div>
+        </div>
+        <div id="tools-list" class="tools-list">
+          <div class="empty-state">
+            <div class="empty-state__icon"></div>
+            <p class="empty-state__text" data-i18n="tools.empty_title">No WebMCP tools detected on this page.</p>
+            <p class="empty-state__hint" data-i18n="tools.empty_hint">Make sure <code>chrome://flags/#enable-webmcp-testing</code> is enabled.</p>
+          </div>
+        </div>
+      </section>
+
+      <section id="panel-execute" class="panel">
+        <div class="empty-state">
+          <div class="empty-state__icon"></div>
+          <p class="empty-state__text" data-i18n="execute.empty_title">Select a tool from the Tools tab to execute it.</p>
+        </div>
+      </section>
+
+      <section id="panel-timeline" class="panel">
+        <div class="panel__toolbar">
+          <button id="timeline-clear" class="btn btn--sm" data-i18n="timeline.clear">Clear</button>
+        </div>
+        <div id="timeline-list" class="timeline-list">
+          <div class="empty-state">
+            <div class="empty-state__icon"></div>
+            <p class="empty-state__text" data-i18n="timeline.empty_title">No events recorded yet.</p>
+            <p class="empty-state__hint" data-i18n="timeline.empty_hint">Events will appear here as tools are registered or unregistered.</p>
+          </div>
+        </div>
+      </section>
+
+      <section id="panel-history" class="panel">
+        <div class="panel__toolbar">
+          <button id="history-clear" class="btn btn--sm" data-i18n="history.clear">Clear History</button>
+        </div>
+        <div id="history-list" class="history-list">
+          <div class="empty-state">
+            <div class="empty-state__icon"></div>
+            <p class="empty-state__text" data-i18n="history.empty_title">No execution history.</p>
+            <p class="empty-state__hint" data-i18n="history.empty_hint">Execute a tool to see results here.</p>
+          </div>
+        </div>
+      </section>
+
+      <section id="panel-snapshots" class="panel">
+        <div class="empty-state">
+          <div class="empty-state__icon"></div>
+          <p class="empty-state__text" data-i18n="snapshots.empty_title">No snapshots saved yet.</p>
+          <p class="empty-state__hint" data-i18n="snapshots.empty_hint">Save snapshots to compare tool definitions over time.</p>
+        </div>
+      </section>
+    </main>
+
+    <footer class="status-bar">
+      <span id="status-connection" class="status-bar__item status-bar__item--disconnected" data-i18n="status.disconnected">● Disconnected</span>
+      <span id="status-tools" class="status-bar__item">0 tools</span>
+    </footer>
+  </div>
+
+  <script type="module" src="./main.ts"></script>
+</body>
+</html>

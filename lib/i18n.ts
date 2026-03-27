@@ -1,0 +1,264 @@
+export type Locale = 'en' | 'zh';
+
+type TranslationDict = Record<string, string>;
+
+const en: TranslationDict = {
+  // Header
+  'header.title': 'WebMCP DevTools',
+
+  // Tabs
+  'tab.tools': 'Tools',
+  'tab.execute': 'Execute',
+  'tab.timeline': 'Timeline',
+  'tab.snapshots': 'Snapshots',
+
+  // Tools panel
+  'tools.search_placeholder': 'Search tools...',
+  'tools.empty_title': 'No WebMCP tools detected on this page.',
+  'tools.empty_hint': 'Make sure <code>chrome://flags/#enable-webmcp-testing</code> is enabled.',
+  'tools.no_match': 'No tools match your search.',
+  'tools.readonly': 'Read-only',
+  'tools.count': '{count} tool(s)',
+  'tools.count_one': '1 tool',
+  'tools.count_zero': '0 tools',
+
+  // Execute panel
+  'execute.empty_title': 'Select a tool from the Tools tab to execute it.',
+  'execute.phase_hint': 'Tool execution form will be implemented in Phase 3.',
+  'execute.run': 'Execute',
+  'execute.result': 'Result',
+  'execute.duration': 'Duration',
+  'execute.raw_json': 'Raw JSON',
+  'execute.form_mode': 'Form',
+
+  // Form
+  'form.required_error': '{field} is required',
+  'form.select_placeholder': '-- Select --',
+
+  // Timeline panel
+  'timeline.clear': 'Clear',
+  'timeline.empty_title': 'No events recorded yet.',
+  'timeline.empty_hint': 'Events will appear here as tools are registered or unregistered.',
+  'timeline.register': 'register',
+  'timeline.unregister': 'unregister',
+  'timeline.toolchange': 'toolchange',
+
+  // Snapshots panel
+  'snapshots.empty_title': 'No snapshots saved yet.',
+  'snapshots.empty_hint': 'Save snapshots to compare tool definitions over time.',
+  'snapshots.save': 'Save Snapshot',
+  'snapshots.delete': 'Delete',
+  'snapshots.compare': 'Compare',
+
+  // Status bar
+  'status.connected': '● Connected',
+  'status.disconnected': '● Disconnected',
+  'status.api_unavailable': '● WebMCP API not available',
+
+  // Export
+  'export.json': 'Copy as JSON',
+  'export.markdown': 'Copy as Markdown',
+  'export.postman': 'Export Postman Collection',
+  'export.script': 'Copy as Script',
+  'export.title': 'Export',
+  'export.copied': 'Copied!',
+
+  // Diff
+  'diff.added': 'Added',
+  'diff.removed': 'Removed',
+  'diff.modified': 'Modified',
+  'diff.no_changes': 'No changes detected.',
+  'diff.summary': '+{added} added, -{removed} removed, ~{modified} modified',
+  'diff.select_snapshots': 'Select two snapshots to compare.',
+  'diff.compare_with_current': 'Compare with Current',
+
+  // Snapshots (extended)
+  'snapshots.name_placeholder': 'Snapshot name...',
+  'snapshots.tools_count': '{count} tools',
+  'snapshots.confirm_delete': 'Delete this snapshot?',
+  'snapshots.saved': 'Snapshot saved!',
+
+  // Timeline (extended)
+  'timeline.show_data': 'Show data',
+  'timeline.hide_data': 'Hide data',
+
+  // Execution History
+  'history.title': 'History',
+  'history.empty_title': 'No execution history.',
+  'history.empty_hint': 'Execute a tool to see results here.',
+  'history.clear': 'Clear History',
+  'history.success': 'Success',
+  'history.failure': 'Failed',
+  'history.input': 'Input',
+  'history.output': 'Output',
+
+  // Theme
+  'theme.system': 'System',
+  'theme.light': 'Light',
+  'theme.dark': 'Dark',
+
+  // Error messages
+  'error.restricted_page': 'WebMCP is not available on this page.',
+  'error.injection_failed': 'Failed to inject content scripts.',
+
+  // Language
+  'lang.switch': '中文',
+  'lang.current': 'EN',
+};
+
+const zh: TranslationDict = {
+  // Header
+  'header.title': 'WebMCP 开发工具',
+
+  // Tabs
+  'tab.tools': '工具',
+  'tab.execute': '执行',
+  'tab.timeline': '时间线',
+  'tab.snapshots': '快照',
+
+  // Tools panel
+  'tools.search_placeholder': '搜索工具...',
+  'tools.empty_title': '当前页面未检测到任何 WebMCP 工具。',
+  'tools.empty_hint': '请确认已启用 <code>chrome://flags/#enable-webmcp-testing</code>。',
+  'tools.no_match': '没有匹配的工具。',
+  'tools.readonly': '只读',
+  'tools.count': '{count} 个工具',
+  'tools.count_one': '1 个工具',
+  'tools.count_zero': '0 个工具',
+
+  // Execute panel
+  'execute.empty_title': '请从"工具"标签页选择一个工具来执行。',
+  'execute.phase_hint': '工具执行表单将在第 3 阶段实现。',
+  'execute.run': '执行',
+  'execute.result': '结果',
+  'execute.duration': '耗时',
+  'execute.raw_json': '原始 JSON',
+  'execute.form_mode': '表单',
+
+  // Form
+  'form.required_error': '{field} 为必填项',
+  'form.select_placeholder': '-- 请选择 --',
+
+  // Timeline panel
+  'timeline.clear': '清空',
+  'timeline.empty_title': '暂无事件记录。',
+  'timeline.empty_hint': '工具注册或注销时，事件将显示在这里。',
+  'timeline.register': '注册',
+  'timeline.unregister': '注销',
+  'timeline.toolchange': '工具变更',
+
+  // Snapshots panel
+  'snapshots.empty_title': '暂无已保存的快照。',
+  'snapshots.empty_hint': '保存快照以对比不同时间的工具定义变化。',
+  'snapshots.save': '保存快照',
+  'snapshots.delete': '删除',
+  'snapshots.compare': '对比',
+
+  // Status bar
+  'status.connected': '● 已连接',
+  'status.disconnected': '● 未连接',
+  'status.api_unavailable': '● WebMCP API 不可用',
+
+  // Export
+  'export.json': '复制为 JSON',
+  'export.markdown': '复制为 Markdown',
+  'export.postman': '导出 Postman Collection',
+  'export.script': '复制为脚本代码',
+  'export.title': '导出',
+  'export.copied': '已复制！',
+
+  // Diff
+  'diff.added': '新增',
+  'diff.removed': '删除',
+  'diff.modified': '修改',
+  'diff.no_changes': '未检测到变化。',
+  'diff.summary': '+{added} 新增, -{removed} 删除, ~{modified} 修改',
+  'diff.select_snapshots': '请选择两个快照进行对比。',
+  'diff.compare_with_current': '与当前对比',
+
+  // Snapshots (extended)
+  'snapshots.name_placeholder': '快照名称...',
+  'snapshots.tools_count': '{count} 个工具',
+  'snapshots.confirm_delete': '确定删除此快照？',
+  'snapshots.saved': '快照已保存！',
+
+  // Timeline (extended)
+  'timeline.show_data': '查看数据',
+  'timeline.hide_data': '隐藏数据',
+
+  // Execution History
+  'history.title': '历史记录',
+  'history.empty_title': '暂无执行历史。',
+  'history.empty_hint': '执行工具后，结果将显示在这里。',
+  'history.clear': '清空历史',
+  'history.success': '成功',
+  'history.failure': '失败',
+  'history.input': '输入',
+  'history.output': '输出',
+
+  // Theme
+  'theme.system': '跟随系统',
+  'theme.light': '浅色',
+  'theme.dark': '深色',
+
+  // Error messages
+  'error.restricted_page': '此页面不支持 WebMCP。',
+  'error.injection_failed': '内容脚本注入失败。',
+
+  // Language
+  'lang.switch': 'EN',
+  'lang.current': '中文',
+};
+
+const translations: Record<Locale, TranslationDict> = { en, zh };
+
+let currentLocale: Locale = 'en';
+const listeners: Array<(locale: Locale) => void> = [];
+
+export function setLocale(locale: Locale) {
+  currentLocale = locale;
+  document.documentElement.setAttribute('lang', locale);
+  updateDOMTranslations();
+  listeners.forEach((fn) => fn(locale));
+}
+
+export function getLocale(): Locale {
+  return currentLocale;
+}
+
+export function t(key: string, params?: Record<string, string | number>): string {
+  let text = translations[currentLocale][key] ?? translations['en'][key] ?? key;
+  if (params) {
+    for (const [k, v] of Object.entries(params)) {
+      text = text.replace(`{${k}}`, String(v));
+    }
+  }
+  return text;
+}
+
+export function onLocaleChange(callback: (locale: Locale) => void) {
+  listeners.push(callback);
+}
+
+export function updateDOMTranslations() {
+  document.querySelectorAll<HTMLElement>('[data-i18n]').forEach((el) => {
+    const key = el.getAttribute('data-i18n')!;
+    el.innerHTML = t(key);
+  });
+
+  document.querySelectorAll<HTMLElement>('[data-i18n-placeholder]').forEach((el) => {
+    const key = el.getAttribute('data-i18n-placeholder')!;
+    (el as HTMLInputElement).placeholder = t(key);
+  });
+
+  document.querySelectorAll<HTMLElement>('[data-i18n-title]').forEach((el) => {
+    const key = el.getAttribute('data-i18n-title')!;
+    el.title = t(key);
+  });
+}
+
+export function formatToolCount(count: number): string {
+  if (count === 0) return t('tools.count_zero');
+  if (count === 1) return t('tools.count_one');
+  return t('tools.count', { count });
+}
