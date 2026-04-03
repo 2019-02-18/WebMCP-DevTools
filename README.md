@@ -1,6 +1,6 @@
 # WebMCP DevTools
 
-一个用于检查、测试和监控通过 `navigator.modelContext` 注册的 [WebMCP](https://chromestatus.com/feature/5269243285405696) 工具的 Chrome 扩展。
+一个用于检查、测试和监控通过 `navigator.modelContext` 注册的 [WebMCP]() 工具的 Chrome 扩展。
 
 [English](#english) | 中文
 
@@ -181,7 +181,7 @@ pnpm zip
 
 # WebMCP DevTools
 
-A Chrome extension for inspecting, testing, and monitoring [WebMCP](https://chromestatus.com/feature/5269243285405696) tools registered via `navigator.modelContext`.
+A Chrome extension for inspecting, testing, and monitoring [WebMCP]() tools registered via `navigator.modelContext`.
 
 [中文](#webmcp-devtools) | English
 
