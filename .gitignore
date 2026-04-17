@@ -1,6 +1,8 @@
 node_modules/
 .output/
 .wxt/
+.cursor/
+docs/
 dist/
 *.log
 feedback-history-*.json
