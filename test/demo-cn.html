@@ -6,235 +6,250 @@
   <title>WebMCP 魔法工坊 — AI 工具体验站</title>
   <style>
     :root {
-      --primary: #6366f1;
-      --primary-light: #818cf8;
-      --primary-bg: #eef2ff;
-      --accent: #f59e0b;
-      --success: #10b981;
-      --danger: #ef4444;
-      --bg: #fafbff;
-      --surface: #ffffff;
-      --border: #e5e7eb;
-      --text: #1f2937;
-      --text-muted: #6b7280;
+      --bg: #09090b;
+      --surface: #18181b;
+      --surface-2: #27272a;
+      --border: #3f3f46;
+      --text: #fafafa;
+      --text-2: #a1a1aa;
+      --text-3: #71717a;
+      --accent: #10b981;
+      --accent-light: #34d399;
+      --accent-bg: rgba(16,185,129,.08);
+      --cyan: #06b6d4;
+      --amber: #f59e0b;
+      --rose: #f43f5e;
       --radius: 12px;
-      --shadow: 0 1px 3px rgba(0,0,0,.08), 0 4px 12px rgba(0,0,0,.04);
-      --shadow-lg: 0 4px 24px rgba(99,102,241,.12);
+      --font: -apple-system, 'PingFang SC', 'Microsoft YaHei', 'Noto Sans SC', sans-serif;
+      --mono: 'JetBrains Mono', 'Cascadia Code', 'Fira Code', Menlo, monospace;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
-      font-family: -apple-system, 'PingFang SC', 'Microsoft YaHei', 'Helvetica Neue', sans-serif;
+      font-family: var(--font);
       background: var(--bg);
       color: var(--text);
       line-height: 1.6;
-      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+    }
+    a { color: var(--accent); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+    code {
+      font-family: var(--mono);
+      font-size: .85em;
+      background: var(--surface-2);
+      padding: 2px 6px;
+      border-radius: 4px;
+      color: var(--accent-light);
     }
 
-    /* Hero */
+    /* ===== Hero ===== */
     .hero {
-      background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 50%, #a78bfa 100%);
-      color: #fff;
-      text-align: center;
-      padding: 60px 20px 48px;
       position: relative;
+      padding: 80px 24px 64px;
+      text-align: center;
       overflow: hidden;
     }
     .hero::before {
       content: '';
       position: absolute;
-      top: -50%; left: -50%;
-      width: 200%; height: 200%;
-      background: radial-gradient(circle at 30% 40%, rgba(255,255,255,.08) 0%, transparent 60%),
-                  radial-gradient(circle at 70% 80%, rgba(255,255,255,.05) 0%, transparent 50%);
-      animation: float 20s ease-in-out infinite;
+      top: -120px; left: 50%;
+      transform: translateX(-50%);
+      width: 700px; height: 700px;
+      background: radial-gradient(circle, rgba(16,185,129,.07) 0%, transparent 70%);
+      pointer-events: none;
     }
-    @keyframes float {
-      0%, 100% { transform: translateY(0) rotate(0deg); }
-      50% { transform: translateY(-20px) rotate(2deg); }
+    .hero::after {
+      content: '';
+      position: absolute;
+      top: 0; right: 10%;
+      width: 400px; height: 400px;
+      background: radial-gradient(circle, rgba(6,182,212,.05) 0%, transparent 70%);
+      pointer-events: none;
     }
-    .hero-content { position: relative; z-index: 1; }
-    .hero h1 {
-      font-size: 2.5rem;
-      font-weight: 800;
-      margin-bottom: 8px;
-      letter-spacing: -0.5px;
-    }
-    .hero h1 .spark { display: inline-block; animation: sparkle 2s ease-in-out infinite; }
-    @keyframes sparkle {
-      0%, 100% { transform: scale(1) rotate(0); }
-      50% { transform: scale(1.2) rotate(10deg); }
-    }
-    .hero p { font-size: 1.1rem; opacity: .9; max-width: 600px; margin: 0 auto 20px; }
+    .hero-content { position: relative; z-index: 1; max-width: 640px; margin: 0 auto; }
     .hero-badge {
       display: inline-flex;
       align-items: center;
       gap: 6px;
-      background: rgba(255,255,255,.2);
-      backdrop-filter: blur(8px);
-      padding: 6px 16px;
+      background: var(--accent-bg);
+      border: 1px solid rgba(16,185,129,.2);
+      padding: 4px 14px;
       border-radius: 99px;
-      font-size: 13px;
+      font-size: 12px;
+      color: var(--accent-light);
       font-weight: 500;
+      margin-bottom: 24px;
     }
     .hero-badge .dot {
-      width: 8px; height: 8px;
-      border-radius: 50%;
-      background: #4ade80;
-      animation: pulse 2s ease-in-out infinite;
+      width: 6px; height: 6px; border-radius: 50%;
+      background: var(--accent);
+      box-shadow: 0 0 8px var(--accent);
     }
-    @keyframes pulse {
-      0%, 100% { opacity: 1; transform: scale(1); }
-      50% { opacity: .5; transform: scale(1.3); }
+    .hero h1 {
+      font-size: clamp(2rem, 5vw, 3rem);
+      font-weight: 800;
+      letter-spacing: -1px;
+      line-height: 1.15;
+      margin-bottom: 16px;
+    }
+    .hero h1 .gradient {
+      background: linear-gradient(135deg, var(--accent-light), var(--cyan));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+    }
+    .hero p {
+      font-size: 1.05rem;
+      color: var(--text-2);
+      max-width: 480px;
+      margin: 0 auto 28px;
+    }
+    .hero-actions {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      flex-wrap: wrap;
     }
 
-    /* Status Banner */
-    .status-banner {
-      max-width: 900px;
-      margin: -24px auto 0;
-      padding: 0 20px;
+    /* ===== Buttons ===== */
+    .btn {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      font-family: var(--font);
+      cursor: pointer;
+      transition: all .15s;
+    }
+    .btn--primary {
+      background: var(--accent);
+      color: #fff;
+    }
+    .btn--primary:hover { background: var(--accent-light); }
+    .btn--ghost {
+      background: transparent;
+      border: 1px solid var(--border);
+      color: var(--text-2);
+    }
+    .btn--ghost:hover { background: var(--surface); color: var(--text); }
+    .btn--danger { background: rgba(244,63,94,.15); color: var(--rose); border: 1px solid rgba(244,63,94,.2); }
+    .btn--danger:hover { background: rgba(244,63,94,.25); }
+    .btn--sm { padding: 6px 14px; font-size: 13px; }
+
+    /* ===== Status ===== */
+    .status-bar {
+      max-width: 800px;
+      margin: -20px auto 0;
+      padding: 0 24px;
       position: relative;
       z-index: 2;
     }
     .status-card {
       background: var(--surface);
+      border: 1px solid var(--border);
       border-radius: var(--radius);
-      padding: 16px 20px;
-      box-shadow: var(--shadow-lg);
+      padding: 14px 20px;
       display: flex;
       align-items: center;
       gap: 12px;
     }
-    .status-icon {
-      width: 40px; height: 40px;
-      border-radius: 10px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 20px;
+    .status-dot {
+      width: 10px; height: 10px;
+      border-radius: 50%;
       flex-shrink: 0;
     }
-    .status-icon.ok { background: #dcfce7; }
-    .status-icon.err { background: #fee2e2; }
-    .status-text { flex: 1; }
-    .status-text strong { display: block; font-size: 14px; }
-    .status-text span { font-size: 12px; color: var(--text-muted); }
+    .status-dot.ok { background: var(--accent); box-shadow: 0 0 8px rgba(16,185,129,.5); }
+    .status-dot.err { background: var(--rose); box-shadow: 0 0 8px rgba(244,63,94,.5); }
+    .status-text { flex: 1; font-size: 13px; color: var(--text-2); }
+    .status-text strong { color: var(--text); }
 
-    /* Main */
+    /* ===== Main ===== */
     .main {
-      max-width: 900px;
+      max-width: 800px;
       margin: 0 auto;
-      padding: 32px 20px 60px;
+      padding: 40px 24px 80px;
     }
 
-    /* Section */
-    .section-title {
-      display: flex;
+    /* ===== Section ===== */
+    .section { margin-bottom: 48px; }
+    .section-label {
+      display: inline-flex;
       align-items: center;
-      gap: 10px;
-      margin: 36px 0 16px;
-      font-size: 1.25rem;
+      gap: 6px;
+      font-size: 11px;
       font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 1.5px;
+      color: var(--accent);
+      margin-bottom: 8px;
     }
-    .section-title .icon {
-      width: 32px; height: 32px;
-      border-radius: 8px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 16px;
+    .section-title {
+      font-size: 1.5rem;
+      font-weight: 700;
+      margin-bottom: 6px;
+      letter-spacing: -0.3px;
     }
-    .section-title .icon.purple { background: #ede9fe; }
-    .section-title .icon.blue { background: #dbeafe; }
-    .section-title .icon.green { background: #dcfce7; }
-    .section-desc { color: var(--text-muted); font-size: 14px; margin-bottom: 16px; }
+    .section-desc {
+      color: var(--text-3);
+      font-size: 14px;
+      margin-bottom: 20px;
+    }
 
-    /* Cards Grid */
-    .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 16px; }
-
-    /* Tool Card */
+    /* ===== Tool Grid ===== */
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+      gap: 12px;
+    }
     .tool-card {
       background: var(--surface);
       border: 1px solid var(--border);
       border-radius: var(--radius);
       padding: 20px;
-      transition: transform .2s, box-shadow .2s;
-      position: relative;
-      overflow: hidden;
+      transition: border-color .2s, box-shadow .2s;
+      cursor: default;
     }
     .tool-card:hover {
-      transform: translateY(-2px);
-      box-shadow: var(--shadow-lg);
+      border-color: rgba(16,185,129,.3);
+      box-shadow: 0 0 0 1px rgba(16,185,129,.1), 0 4px 16px rgba(0,0,0,.2);
     }
-    .tool-card__header {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      margin-bottom: 8px;
-    }
-    .tool-card__icon {
-      width: 36px; height: 36px;
-      border-radius: 8px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 18px;
-      flex-shrink: 0;
-    }
-    .tool-card__name {
-      font-weight: 700;
-      font-size: 15px;
-    }
-    .tool-card__desc {
-      color: var(--text-muted);
-      font-size: 13px;
-      margin-bottom: 12px;
-    }
-    .tool-card__tags {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 6px;
-    }
+    .tool-card__emoji { font-size: 28px; margin-bottom: 12px; display: block; }
+    .tool-card__name { font-weight: 700; font-size: 15px; margin-bottom: 4px; }
+    .tool-card__desc { color: var(--text-3); font-size: 13px; line-height: 1.5; margin-bottom: 12px; }
+    .tool-card__tags { display: flex; flex-wrap: wrap; gap: 4px; }
     .tag {
-      display: inline-block;
       font-size: 11px;
       padding: 2px 8px;
-      border-radius: 99px;
+      border-radius: 4px;
       font-weight: 500;
+      font-family: var(--mono);
     }
-    .tag--purple { background: #ede9fe; color: #7c3aed; }
-    .tag--blue { background: #dbeafe; color: #2563eb; }
-    .tag--green { background: #dcfce7; color: #059669; }
-    .tag--orange { background: #fef3c7; color: #d97706; }
-    .tag--pink { background: #fce7f3; color: #db2777; }
-    .tag--gray { background: #f3f4f6; color: #6b7280; }
+    .tag--name { background: var(--surface-2); color: var(--text-2); }
+    .tag--type { background: var(--accent-bg); color: var(--accent); border: 1px solid rgba(16,185,129,.15); }
+    .tag--cyan { background: rgba(6,182,212,.1); color: var(--cyan); border: 1px solid rgba(6,182,212,.15); }
 
-    /* Declarative Forms */
+    /* ===== Form Cards ===== */
     .form-card {
       background: var(--surface);
       border: 1px solid var(--border);
       border-radius: var(--radius);
       padding: 24px;
       margin-bottom: 16px;
-      transition: box-shadow .2s;
     }
-    .form-card:hover { box-shadow: var(--shadow); }
     .form-card__header {
       display: flex;
       align-items: center;
-      gap: 10px;
-      margin-bottom: 6px;
+      gap: 12px;
+      margin-bottom: 16px;
     }
-    .form-card__icon {
-      width: 36px; height: 36px;
-      border-radius: 8px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 18px;
-      flex-shrink: 0;
-    }
+    .form-card__emoji { font-size: 24px; }
+    .form-card__info { flex: 1; }
     .form-card__title { font-weight: 700; font-size: 16px; }
-    .form-card__desc { color: var(--text-muted); font-size: 13px; margin-bottom: 16px; }
+    .form-card__subtitle { font-size: 12px; color: var(--text-3); margin-top: 2px; }
     .form-row {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -246,63 +261,46 @@
     .form-group label {
       font-size: 12px;
       font-weight: 600;
-      color: var(--text-muted);
+      color: var(--text-3);
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
     }
     .form-group input, .form-group select, .form-group textarea {
       padding: 8px 12px;
+      background: var(--bg);
       border: 1px solid var(--border);
-      border-radius: 8px;
+      border-radius: 6px;
+      color: var(--text);
       font-size: 14px;
-      font-family: inherit;
-      transition: border-color .2s, box-shadow .2s;
+      font-family: var(--font);
       outline: none;
+      transition: border-color .15s;
     }
     .form-group input:focus, .form-group select:focus, .form-group textarea:focus {
-      border-color: var(--primary);
-      box-shadow: 0 0 0 3px rgba(99,102,241,.1);
+      border-color: var(--accent);
+      box-shadow: 0 0 0 2px rgba(16,185,129,.1);
     }
-    .form-group textarea { resize: vertical; }
+    .form-group input::placeholder, .form-group textarea::placeholder {
+      color: var(--text-3);
+    }
+    .form-group select { cursor: pointer; }
+    .form-group textarea { resize: vertical; min-height: 60px; }
     .checkbox-label {
       display: flex;
       align-items: center;
       gap: 8px;
       font-size: 13px;
+      color: var(--text-2);
       cursor: pointer;
-      color: var(--text-muted);
+      margin-bottom: 16px;
     }
     .checkbox-label input[type="checkbox"] {
       width: 16px; height: 16px;
-      accent-color: var(--primary);
+      accent-color: var(--accent);
     }
-    .btn {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      padding: 8px 20px;
-      border: none;
-      border-radius: 8px;
-      font-size: 14px;
-      font-weight: 600;
-      font-family: inherit;
-      cursor: pointer;
-      transition: all .2s;
-    }
-    .btn--primary { background: var(--primary); color: #fff; }
-    .btn--primary:hover { background: var(--primary-light); transform: translateY(-1px); }
-    .btn--success { background: var(--success); color: #fff; }
-    .btn--success:hover { opacity: .9; }
-    .btn--danger { background: var(--danger); color: #fff; }
-    .btn--danger:hover { opacity: .9; }
-    .btn--outline {
-      background: transparent;
-      border: 1px solid var(--border);
-      color: var(--text);
-    }
-    .btn--outline:hover { background: #f9fafb; }
-    .btn-group { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 8px; }
 
-    /* Interactive Section */
-    .interactive-bar {
+    /* ===== Interactive Bar ===== */
+    .action-bar {
       background: var(--surface);
       border: 1px solid var(--border);
       border-radius: var(--radius);
@@ -312,70 +310,68 @@
       gap: 12px;
       flex-wrap: wrap;
     }
-    .interactive-bar__label {
-      font-size: 13px;
+    .action-bar__label {
+      font-size: 14px;
       font-weight: 600;
-      color: var(--text-muted);
+      color: var(--text-2);
+      margin-right: auto;
     }
 
-    /* Log Console */
+    /* ===== Console ===== */
     .console {
       margin-top: 24px;
       border-radius: var(--radius);
       overflow: hidden;
-      box-shadow: var(--shadow);
+      border: 1px solid var(--border);
     }
     .console__header {
-      background: #1e1b4b;
-      color: #c7d2fe;
+      background: var(--surface);
       padding: 8px 16px;
       font-size: 12px;
+      color: var(--text-3);
       font-weight: 600;
       display: flex;
       align-items: center;
-      gap: 8px;
+      gap: 10px;
+      border-bottom: 1px solid var(--border);
     }
-    .console__header .dots {
+    .console__dots {
       display: flex;
-      gap: 6px;
+      gap: 5px;
     }
-    .console__header .dots span {
-      width: 10px; height: 10px;
+    .console__dots span {
+      width: 9px; height: 9px;
       border-radius: 50%;
     }
-    .console__header .dots span:nth-child(1) { background: #ef4444; }
-    .console__header .dots span:nth-child(2) { background: #f59e0b; }
-    .console__header .dots span:nth-child(3) { background: #10b981; }
+    .console__dots span:nth-child(1) { background: #f43f5e; }
+    .console__dots span:nth-child(2) { background: #f59e0b; }
+    .console__dots span:nth-child(3) { background: #10b981; }
     .console__body {
-      background: #0f0a2e;
-      color: #c4b5fd;
+      background: var(--bg);
       padding: 16px;
-      font-family: 'Cascadia Code', 'Fira Code', 'JetBrains Mono', Menlo, monospace;
+      font-family: var(--mono);
       font-size: 12px;
-      max-height: 280px;
+      max-height: 260px;
       overflow-y: auto;
       white-space: pre-wrap;
-      line-height: 1.8;
+      line-height: 1.9;
+      color: var(--text-3);
     }
-    .console__body .log-time { color: #6366f1; }
-    .console__body .log-ok { color: #4ade80; }
-    .console__body .log-err { color: #f87171; }
-    .console__body .log-info { color: #a5b4fc; }
+    .log-t { color: var(--text-3); }
+    .log-ok { color: var(--accent); }
+    .log-err { color: var(--rose); }
+    .log-info { color: var(--text-2); }
 
-    /* Footer */
+    /* ===== Footer ===== */
     .footer {
       text-align: center;
-      padding: 32px 20px;
-      color: var(--text-muted);
+      padding: 40px 24px;
       font-size: 13px;
+      color: var(--text-3);
+      border-top: 1px solid var(--border);
     }
-    .footer a {
-      color: var(--primary);
-      text-decoration: none;
-    }
-    .footer a:hover { text-decoration: underline; }
 
-    /* Result Toast */
+    /* ===== Toast ===== */
     .toast {
       position: fixed;
       bottom: 24px;
@@ -383,297 +379,271 @@
       background: var(--surface);
       border: 1px solid var(--border);
       border-radius: var(--radius);
-      padding: 16px 20px;
-      box-shadow: 0 8px 32px rgba(0,0,0,.12);
-      max-width: 360px;
+      padding: 14px 18px;
+      box-shadow: 0 8px 32px rgba(0,0,0,.4);
+      max-width: 340px;
       z-index: 999;
-      animation: slideIn .3s ease;
+      animation: fadeUp .25s ease;
       display: none;
     }
     .toast.show { display: block; }
-    @keyframes slideIn {
-      from { opacity: 0; transform: translateY(20px); }
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(12px); }
       to { opacity: 1; transform: translateY(0); }
     }
-    .toast__title { font-weight: 700; font-size: 14px; margin-bottom: 4px; }
-    .toast__body { font-size: 12px; color: var(--text-muted); font-family: monospace; }
+    .toast__title { font-weight: 700; font-size: 13px; margin-bottom: 4px; }
+    .toast__body { font-size: 12px; color: var(--text-3); font-family: var(--mono); max-height: 120px; overflow-y: auto; }
 
     @media (max-width: 600px) {
-      .hero h1 { font-size: 1.75rem; }
+      .hero { padding: 60px 20px 48px; }
       .form-row { grid-template-columns: 1fr; }
       .grid { grid-template-columns: 1fr; }
+      .action-bar { flex-direction: column; align-items: stretch; }
+      .action-bar__label { margin-right: 0; margin-bottom: 4px; }
     }
   </style>
 </head>
 <body>
 
-  <!-- Hero -->
   <header class="hero">
     <div class="hero-content">
-      <h1><span class="spark">&#x2728;</span> WebMCP 魔法工坊</h1>
-      <p>探索浏览器原生 AI 工具协议 — 在这里体验 WebMCP 的魔力</p>
       <div class="hero-badge">
         <span class="dot"></span>
-        <span>navigator.modelContext</span>
+        navigator.modelContext
+      </div>
+      <h1>探索 <span class="gradient">WebMCP</span> 的魔力</h1>
+      <p>浏览器原生 AI 工具协议 — 让网页直接为 AI 提供可调用的工具。这里有 8 个好玩的工具等你体验。</p>
+      <div class="hero-actions">
+        <a href="https://github.com/2019-02-18/WebMCP-DevTools" target="_blank" class="btn btn--primary">GitHub</a>
+        <a href="#tools" class="btn btn--ghost">向下探索 ↓</a>
       </div>
     </div>
   </header>
 
-  <!-- Status -->
-  <div class="status-banner">
-    <div class="status-card" id="api-status">
-      <div class="status-icon" id="status-icon">&#x23F3;</div>
+  <div class="status-bar">
+    <div class="status-card">
+      <div class="status-dot" id="s-dot"></div>
       <div class="status-text">
-        <strong id="status-title">正在检测 WebMCP API...</strong>
-        <span id="status-desc">请稍候</span>
+        <strong id="s-title">检测中...</strong>
+        <span id="s-desc"></span>
       </div>
     </div>
   </div>
 
-  <main class="main">
+  <main class="main" id="tools">
 
-    <!-- Declarative Tools -->
-    <div class="section-title">
-      <span class="icon purple">&#x1F4DD;</span>
-      声明式工具 — HTML 表单即工具
-    </div>
-    <p class="section-desc">通过 HTML <code>&lt;form toolname="..."&gt;</code> 属性声明的 WebMCP 工具，无需编写 JavaScript。</p>
+    <!-- Declarative -->
+    <section class="section">
+      <div class="section-label">&#x1F4DD; 声明式</div>
+      <h2 class="section-title">HTML 表单即工具</h2>
+      <p class="section-desc">通过 <code>&lt;form toolname="..."&gt;</code> 属性声明，无需写一行 JavaScript。</p>
 
-    <div class="form-card">
-      <div class="form-card__header">
-        <div class="form-card__icon" style="background:#fef3c7;">&#x2615;</div>
-        <div>
-          <div class="form-card__title">咖啡订单</div>
-          <div style="display:flex; gap:4px; margin-top:4px;">
-            <span class="tag tag--orange">声明式</span>
-            <span class="tag tag--gray">coffee_order</span>
+      <div class="form-card">
+        <div class="form-card__header">
+          <span class="form-card__emoji">&#x2615;</span>
+          <div class="form-card__info">
+            <div class="form-card__title">咖啡订单</div>
+            <div class="form-card__subtitle">coffee_order · 声明式工具</div>
+          </div>
+        </div>
+        <form toolname="coffee_order" tooldescription="下单一杯定制咖啡，支持选择杯型、甜度和配料。">
+          <div class="form-row">
+            <div class="form-group">
+              <label>咖啡类型</label>
+              <select name="coffee_type" required>
+                <option value="">请选择...</option>
+                <option value="americano">美式</option>
+                <option value="latte">拿铁</option>
+                <option value="cappuccino">卡布奇诺</option>
+                <option value="mocha">摩卡</option>
+                <option value="matcha_latte">抹茶拿铁</option>
+                <option value="cold_brew">冷萃</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>杯型</label>
+              <select name="size" required>
+                <option value="small">小杯 354ml</option>
+                <option value="medium" selected>中杯 473ml</option>
+                <option value="large">大杯 591ml</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>甜度</label>
+              <select name="sweetness">
+                <option value="none">无糖</option>
+                <option value="less">少糖</option>
+                <option value="normal" selected>正常</option>
+                <option value="more">多糖</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>温度</label>
+              <select name="temperature">
+                <option value="hot" selected>热饮</option>
+                <option value="iced">冰饮</option>
+                <option value="warm">温饮</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-row full">
+            <div class="form-group">
+              <label>备注</label>
+              <input name="note" type="text" placeholder="少冰、燕麦奶替换..." />
+            </div>
+          </div>
+          <label class="checkbox-label">
+            <input name="extra_shot" type="checkbox" /> 加一份浓缩 (+3元)
+          </label>
+          <button type="submit" class="btn btn--primary btn--sm">下单</button>
+        </form>
+      </div>
+
+      <div class="form-card">
+        <div class="form-card__header">
+          <span class="form-card__emoji">&#x1F389;</span>
+          <div class="form-card__info">
+            <div class="form-card__title">活动报名</div>
+            <div class="form-card__subtitle">event_signup · 声明式工具</div>
+          </div>
+        </div>
+        <form toolname="event_signup" tooldescription="报名参加线下技术分享活动，填写姓名、联系方式和场次。">
+          <div class="form-row">
+            <div class="form-group">
+              <label>姓名</label>
+              <input name="name" type="text" required placeholder="真实姓名" />
+            </div>
+            <div class="form-group">
+              <label>手机号</label>
+              <input name="phone" type="tel" required placeholder="11位手机号" />
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>邮箱</label>
+              <input name="email" type="email" placeholder="用于接收确认" />
+            </div>
+            <div class="form-group">
+              <label>场次</label>
+              <select name="session" required>
+                <option value="">请选择...</option>
+                <option value="webmcp_intro">WebMCP 入门 (4/20 14:00)</option>
+                <option value="ai_tools">AI 工具进阶 (4/20 16:00)</option>
+                <option value="mcp_bridge">MCP Bridge (4/21 14:00)</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-row full">
+            <div class="form-group">
+              <label>你最想了解什么</label>
+              <textarea name="question" rows="2" placeholder="提前写下你的问题..."></textarea>
+            </div>
+          </div>
+          <label class="checkbox-label">
+            <input name="need_lunch" type="checkbox" /> 需要午餐（免费）
+          </label>
+          <button type="submit" class="btn btn--primary btn--sm">立即报名</button>
+        </form>
+      </div>
+    </section>
+
+    <!-- Imperative -->
+    <section class="section">
+      <div class="section-label">&#x26A1; 编程式</div>
+      <h2 class="section-title">JavaScript API 注册</h2>
+      <p class="section-desc">通过 <code>registerTool()</code> 动态注册，拥有完整的执行逻辑和 JSON Schema 输入定义。</p>
+
+      <div class="grid">
+        <div class="tool-card">
+          <span class="tool-card__emoji">&#x1F52E;</span>
+          <div class="tool-card__name">今日运势</div>
+          <div class="tool-card__desc">输入星座，获取运势指数、幸运色、幸运数字和每日建议。</div>
+          <div class="tool-card__tags">
+            <span class="tag tag--name">fortune_telling</span>
+            <span class="tag tag--cyan">只读</span>
+          </div>
+        </div>
+        <div class="tool-card">
+          <span class="tool-card__emoji">&#x1F4B0;</span>
+          <div class="tool-card__name">AA 记账</div>
+          <div class="tool-card__desc">多人聚餐后智能分账，支持按比例、按人头或自定义权重。</div>
+          <div class="tool-card__tags">
+            <span class="tag tag--name">split_bill</span>
+            <span class="tag tag--type">嵌套对象</span>
+          </div>
+        </div>
+        <div class="tool-card">
+          <span class="tool-card__emoji">&#x1F3B2;</span>
+          <div class="tool-card__name">随机决定器</div>
+          <div class="tool-card__desc">选择困难症终结者！输入选项列表，命运之轮替你做决定。</div>
+          <div class="tool-card__tags">
+            <span class="tag tag--name">random_picker</span>
+            <span class="tag tag--type">数组</span>
+          </div>
+        </div>
+        <div class="tool-card">
+          <span class="tool-card__emoji">&#x1F30D;</span>
+          <div class="tool-card__name">世界时钟</div>
+          <div class="tool-card__desc">查全球城市当前时间，支持多城市对比和时差计算。</div>
+          <div class="tool-card__tags">
+            <span class="tag tag--name">world_clock</span>
+            <span class="tag tag--cyan">只读</span>
+          </div>
+        </div>
+        <div class="tool-card">
+          <span class="tool-card__emoji">&#x1F511;</span>
+          <div class="tool-card__name">密码生成器</div>
+          <div class="tool-card__desc">自定义长度和字符类型，生成安全密码并评估强度。</div>
+          <div class="tool-card__tags">
+            <span class="tag tag--name">gen_password</span>
+            <span class="tag tag--type">布尔值</span>
+          </div>
+        </div>
+        <div class="tool-card">
+          <span class="tool-card__emoji">&#x1F4CA;</span>
+          <div class="tool-card__name">单位换算</div>
+          <div class="tool-card__desc">长度、重量、温度、面积、数据存储等常用单位即时互转。</div>
+          <div class="tool-card__tags">
+            <span class="tag tag--name">unit_convert</span>
+            <span class="tag tag--type">枚举</span>
           </div>
         </div>
       </div>
-      <p class="form-card__desc">在线点一杯你喜欢的咖啡，选择杯型、甜度和加料。</p>
-      <form toolname="coffee_order" tooldescription="下单一杯定制咖啡，支持选择杯型、甜度和配料。">
-        <div class="form-row">
-          <div class="form-group">
-            <label>咖啡类型</label>
-            <select name="coffee_type" required>
-              <option value="">请选择...</option>
-              <option value="americano">美式</option>
-              <option value="latte">拿铁</option>
-              <option value="cappuccino">卡布奇诺</option>
-              <option value="mocha">摩卡</option>
-              <option value="matcha_latte">抹茶拿铁</option>
-              <option value="cold_brew">冷萃</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label>杯型</label>
-            <select name="size" required>
-              <option value="small">小杯 (354ml)</option>
-              <option value="medium" selected>中杯 (473ml)</option>
-              <option value="large">大杯 (591ml)</option>
-            </select>
-          </div>
-        </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label>甜度</label>
-            <select name="sweetness">
-              <option value="none">无糖</option>
-              <option value="less">少糖</option>
-              <option value="normal" selected>正常糖</option>
-              <option value="more">多糖</option>
-            </select>
-          </div>
-          <div class="form-group">
-            <label>温度</label>
-            <select name="temperature">
-              <option value="hot" selected>热</option>
-              <option value="iced">冰</option>
-              <option value="warm">温</option>
-            </select>
-          </div>
-        </div>
-        <div class="form-row full">
-          <div class="form-group">
-            <label>备注</label>
-            <input name="note" type="text" placeholder="例：少冰、燕麦奶替换..." />
-          </div>
-        </div>
-        <label class="checkbox-label" style="margin-bottom:12px;">
-          <input name="extra_shot" type="checkbox" /> 加一份浓缩 (+3元)
-        </label>
-        <button type="submit" class="btn btn--primary">&#x2615; 下单</button>
-      </form>
-    </div>
+    </section>
 
-    <div class="form-card">
-      <div class="form-card__header">
-        <div class="form-card__icon" style="background:#fce7f3;">&#x1F3B5;</div>
-        <div>
-          <div class="form-card__title">活动报名</div>
-          <div style="display:flex; gap:4px; margin-top:4px;">
-            <span class="tag tag--pink">声明式</span>
-            <span class="tag tag--gray">event_signup</span>
-          </div>
-        </div>
+    <!-- Dynamic -->
+    <section class="section">
+      <div class="section-label">&#x1F9EA; 动态</div>
+      <h2 class="section-title">运行时注册 / 注销</h2>
+      <p class="section-desc">体验 WebMCP 的动态特性 — 工具可以随时注册和注销，扩展会实时响应变化。</p>
+
+      <div class="action-bar">
+        <span class="action-bar__label">&#x1F916; 聊天机器人</span>
+        <button class="btn btn--primary btn--sm" id="btn-reg">注册</button>
+        <button class="btn btn--danger btn--sm" id="btn-unreg">注销</button>
+        <button class="btn btn--ghost btn--sm" id="btn-list">列出全部</button>
       </div>
-      <p class="form-card__desc">报名参加线下技术分享会，选择你感兴趣的场次。</p>
-      <form toolname="event_signup" tooldescription="报名参加线下技术分享活动，填写姓名、联系方式和场次。">
-        <div class="form-row">
-          <div class="form-group">
-            <label>姓名</label>
-            <input name="name" type="text" required placeholder="请输入真实姓名" />
-          </div>
-          <div class="form-group">
-            <label>手机号</label>
-            <input name="phone" type="tel" required placeholder="11位手机号" />
-          </div>
-        </div>
-        <div class="form-row">
-          <div class="form-group">
-            <label>邮箱</label>
-            <input name="email" type="email" placeholder="接收确认邮件" />
-          </div>
-          <div class="form-group">
-            <label>场次</label>
-            <select name="session" required>
-              <option value="">请选择场次...</option>
-              <option value="webmcp_intro">WebMCP 入门实战 (4/20 14:00)</option>
-              <option value="ai_tools">AI 工具开发进阶 (4/20 16:00)</option>
-              <option value="mcp_bridge">MCP Bridge 深入解析 (4/21 14:00)</option>
-            </select>
-          </div>
-        </div>
-        <div class="form-row full">
-          <div class="form-group">
-            <label>你最想了解什么？</label>
-            <textarea name="question" rows="2" placeholder="可以提前写下你的问题..."></textarea>
-          </div>
-        </div>
-        <label class="checkbox-label" style="margin-bottom:12px;">
-          <input name="need_lunch" type="checkbox" /> 需要午餐 (免费提供)
-        </label>
-        <button type="submit" class="btn btn--primary">&#x1F389; 立即报名</button>
-      </form>
-    </div>
-
-    <!-- Imperative Tools -->
-    <div class="section-title">
-      <span class="icon blue">&#x26A1;</span>
-      编程式工具 — JavaScript API 注册
-    </div>
-    <p class="section-desc">通过 <code>navigator.modelContext.registerTool()</code> 动态注册的工具，拥有完整的执行逻辑。</p>
-
-    <div class="grid">
-      <div class="tool-card">
-        <div class="tool-card__header">
-          <div class="tool-card__icon" style="background:#dbeafe;">&#x1F52E;</div>
-          <span class="tool-card__name">今日运势</span>
-        </div>
-        <div class="tool-card__desc">输入你的星座，获取今日运势预测，包括幸运色、幸运数字和建议。</div>
-        <div class="tool-card__tags">
-          <span class="tag tag--blue">fortune_telling</span>
-          <span class="tag tag--green">只读</span>
-        </div>
-      </div>
-
-      <div class="tool-card">
-        <div class="tool-card__header">
-          <div class="tool-card__icon" style="background:#dcfce7;">&#x1F4B0;</div>
-          <span class="tool-card__name">AA记账</span>
-        </div>
-        <div class="tool-card__desc">多人聚餐后智能AA，支持按比例、按人头或自定义分摊。</div>
-        <div class="tool-card__tags">
-          <span class="tag tag--blue">split_bill</span>
-          <span class="tag tag--purple">嵌套对象</span>
-        </div>
-      </div>
-
-      <div class="tool-card">
-        <div class="tool-card__header">
-          <div class="tool-card__icon" style="background:#ede9fe;">&#x1F3B2;</div>
-          <span class="tool-card__name">随机决定器</span>
-        </div>
-        <div class="tool-card__desc">选择困难症终结者！输入选项列表，帮你随机做出决定。</div>
-        <div class="tool-card__tags">
-          <span class="tag tag--blue">random_picker</span>
-          <span class="tag tag--orange">数组</span>
-        </div>
-      </div>
-
-      <div class="tool-card">
-        <div class="tool-card__header">
-          <div class="tool-card__icon" style="background:#fef3c7;">&#x1F30D;</div>
-          <span class="tool-card__name">世界时钟</span>
-        </div>
-        <div class="tool-card__desc">查询全球任意城市的当前时间，支持时区对比和倒计时。</div>
-        <div class="tool-card__tags">
-          <span class="tag tag--blue">world_clock</span>
-          <span class="tag tag--green">只读</span>
-        </div>
-      </div>
-
-      <div class="tool-card">
-        <div class="tool-card__header">
-          <div class="tool-card__icon" style="background:#fce7f3;">&#x1F511;</div>
-          <span class="tool-card__name">密码生成器</span>
-        </div>
-        <div class="tool-card__desc">生成安全的随机密码，自定义长度、字符类型和强度。</div>
-        <div class="tool-card__tags">
-          <span class="tag tag--blue">gen_password</span>
-          <span class="tag tag--pink">布尔值</span>
-        </div>
-      </div>
-
-      <div class="tool-card">
-        <div class="tool-card__header">
-          <div class="tool-card__icon" style="background:#e0f2fe;">&#x1F4CA;</div>
-          <span class="tool-card__name">单位换算</span>
-        </div>
-        <div class="tool-card__desc">支持长度、重量、温度、面积等常用单位的即时互转。</div>
-        <div class="tool-card__tags">
-          <span class="tag tag--blue">unit_convert</span>
-          <span class="tag tag--orange">枚举</span>
-        </div>
-      </div>
-    </div>
-
-    <!-- Dynamic Tool -->
-    <div class="section-title">
-      <span class="icon green">&#x1F9EA;</span>
-      动态实验 — 注册/注销工具
-    </div>
-    <p class="section-desc">体验 WebMCP 的动态特性：运行时注册和注销工具，观察扩展如何实时响应变化。</p>
-
-    <div class="interactive-bar">
-      <span class="interactive-bar__label">&#x1F916; 聊天机器人工具：</span>
-      <button class="btn btn--success" id="btn-register">&#x2795; 注册</button>
-      <button class="btn btn--danger" id="btn-unregister">&#x2796; 注销</button>
-      <button class="btn btn--outline" id="btn-list">&#x1F4CB; 列出全部工具</button>
-    </div>
+    </section>
 
     <!-- Console -->
     <div class="console">
       <div class="console__header">
-        <div class="dots"><span></span><span></span><span></span></div>
-        WebMCP 控制台
+        <div class="console__dots"><span></span><span></span><span></span></div>
+        控制台
       </div>
       <div class="console__body" id="log"></div>
     </div>
   </main>
 
   <footer class="footer">
-    <p>
-      <a href="https://github.com/2019-02-18/WebMCP-DevTools" target="_blank">WebMCP DevTools</a>
-      &nbsp;·&nbsp;
-      安装 Chrome 扩展后打开侧面板即可探索此页面上的工具
-    </p>
-    <p style="margin-top:4px; font-size:12px; opacity:.7;">
-      需要先启用 <code>chrome://flags/#enable-webmcp-testing</code>
-    </p>
+    <a href="https://github.com/2019-02-18/WebMCP-DevTools" target="_blank">WebMCP DevTools</a>
+    &nbsp;·&nbsp; 安装 Chrome 扩展后打开侧面板即可探索此页面的工具
+    <br />
+    <span style="font-size:11px; opacity:.6;">chrome://flags/#enable-webmcp-testing</span>
   </footer>
 
-  <!-- Toast -->
   <div class="toast" id="toast">
     <div class="toast__title" id="toast-title"></div>
     <div class="toast__body" id="toast-body"></div>
@@ -681,440 +651,235 @@
 
   <script>
     const logEl = document.getElementById('log');
-    const statusIcon = document.getElementById('status-icon');
-    const statusTitle = document.getElementById('status-title');
-    const statusDesc = document.getElementById('status-desc');
-
     function log(msg, type = 'info') {
       const t = new Date().toLocaleTimeString('zh-CN', { hour12: false });
       const cls = type === 'ok' ? 'log-ok' : type === 'err' ? 'log-err' : 'log-info';
-      logEl.innerHTML += `<span class="log-time">[${t}]</span> <span class="${cls}">${msg}</span>\n`;
+      logEl.innerHTML += `<span class="log-t">[${t}]</span> <span class="${cls}">${msg}</span>\n`;
       logEl.scrollTop = logEl.scrollHeight;
     }
 
-    function showToast(title, body, duration = 4000) {
-      const toast = document.getElementById('toast');
+    function toast(title, body, ms = 3500) {
+      const el = document.getElementById('toast');
       document.getElementById('toast-title').textContent = title;
       document.getElementById('toast-body').textContent = typeof body === 'string' ? body : JSON.stringify(body, null, 2);
-      toast.classList.add('show');
-      setTimeout(() => toast.classList.remove('show'), duration);
+      el.classList.add('show');
+      setTimeout(() => el.classList.remove('show'), ms);
     }
 
-    function getMC() {
-      return navigator.modelContext || navigator.modelContextTesting || null;
-    }
-
-    const mc = getMC();
+    const mc = navigator.modelContext || navigator.modelContextTesting || null;
+    const sDot = document.getElementById('s-dot');
+    const sTitle = document.getElementById('s-title');
+    const sDesc = document.getElementById('s-desc');
 
     if (!mc) {
-      statusIcon.className = 'status-icon err';
-      statusIcon.textContent = '\u274C';
-      statusTitle.textContent = 'WebMCP API 不可用';
-      statusDesc.textContent = '请前往 chrome://flags/#enable-webmcp-testing 启用后重启浏览器';
-      log('WebMCP API 未检测到，工具无法注册', 'err');
-      log('请启用 chrome://flags/#enable-webmcp-testing 并重启 Chrome', 'err');
+      sDot.classList.add('err');
+      sTitle.textContent = 'WebMCP API 不可用';
+      sDesc.textContent = ' — 请启用 chrome://flags/#enable-webmcp-testing 后重启浏览器';
+      log('WebMCP API 未检测到', 'err');
     } else {
-      statusIcon.className = 'status-icon ok';
-      statusIcon.textContent = '\u2705';
-      statusTitle.textContent = 'WebMCP API 已就绪';
-      statusDesc.textContent = '所有工具已自动注册 — 打开 WebMCP DevTools 侧面板开始探索';
-      log('WebMCP API 检测成功！开始注册工具...', 'ok');
+      sDot.classList.add('ok');
+      sTitle.textContent = 'WebMCP API 就绪';
+      sDesc.textContent = ' — 8 个工具已自动注册';
+      log('WebMCP API 检测成功，开始注册工具', 'ok');
       registerAll();
     }
 
     function registerAll() {
-      // 1. 今日运势
       mc.registerTool({
         name: 'fortune_telling',
         description: '输入星座获取今日运势预测，包括幸运色、幸运数字、运势指数和每日建议。',
         inputSchema: {
           type: 'object',
           properties: {
-            zodiac: {
-              type: 'string',
-              enum: ['白羊座','金牛座','双子座','巨蟹座','狮子座','处女座','天秤座','天蝎座','射手座','摩羯座','水瓶座','双鱼座'],
-              description: '你的星座',
-            },
-            aspect: {
-              type: 'string',
-              enum: ['综合','爱情','事业','财运','健康'],
-              description: '想查看哪方面的运势',
-            },
+            zodiac: { type: 'string', enum: ['白羊座','金牛座','双子座','巨蟹座','狮子座','处女座','天秤座','天蝎座','射手座','摩羯座','水瓶座','双鱼座'], description: '你的星座' },
+            aspect: { type: 'string', enum: ['综合','爱情','事业','财运','健康'], description: '想查看哪方面的运势' },
           },
           required: ['zodiac'],
         },
         annotations: { readOnlyHint: true },
         execute: async (args) => {
           const colors = ['珊瑚红','薄荷绿','天空蓝','琥珀黄','薰衣草紫','玫瑰金','松石绿'];
-          const tips = [
-            '今天适合大胆表达自己的想法',
-            '放慢脚步，享受生活中的小确幸',
-            '一个意外的好消息即将到来',
-            '适合整理思绪，为下周做规划',
-            '贵人就在身边，多留意周围的人',
-            '今天的灵感特别好，抓住创作机会',
-            '旧友可能会带来惊喜',
-          ];
-          const score = 60 + Math.floor(Math.random() * 40);
-          return {
-            星座: args.zodiac,
-            方面: args.aspect || '综合',
-            运势指数: `${score}/100`,
-            幸运色: colors[Math.floor(Math.random() * colors.length)],
-            幸运数字: Math.floor(Math.random() * 9) + 1,
-            今日建议: tips[Math.floor(Math.random() * tips.length)],
-            宜: ['学习新技能','和朋友聚会','尝试新菜谱'][Math.floor(Math.random() * 3)],
-            忌: ['熬夜','冲动消费','拖延任务'][Math.floor(Math.random() * 3)],
-          };
+          const tips = ['今天适合大胆表达自己的想法','放慢脚步，享受小确幸','一个意外的好消息即将到来','适合整理思绪，为下周做规划','贵人就在身边，多留意','灵感特别好，抓住创作机会','旧友可能会带来惊喜'];
+          return { 星座: args.zodiac, 方面: args.aspect || '综合', 运势指数: `${60 + ~~(Math.random()*40)}/100`, 幸运色: colors[~~(Math.random()*colors.length)], 幸运数字: ~~(Math.random()*9)+1, 今日建议: tips[~~(Math.random()*tips.length)], 宜: ['学习新技能','和朋友聚会','尝试新菜谱'][~~(Math.random()*3)], 忌: ['熬夜','冲动消费','拖延任务'][~~(Math.random()*3)] };
         },
       });
-      log('已注册：fortune_telling（今日运势）', 'ok');
+      log('已注册 fortune_telling（今日运势）', 'ok');
 
-      // 2. AA记账
       mc.registerTool({
         name: 'split_bill',
         description: '多人聚餐后智能AA分账，支持按人头均分或按比例分摊，可添加小费。',
         inputSchema: {
           type: 'object',
           properties: {
-            total_amount: {
-              type: 'number',
-              minimum: 0,
-              description: '账单总金额（元）',
-            },
-            participants: {
-              type: 'array',
-              description: '参与者列表',
-              items: {
-                type: 'object',
-                properties: {
-                  name: { type: 'string', description: '姓名' },
-                  weight: { type: 'number', description: '分摊权重（默认1）', minimum: 0 },
-                },
-                required: ['name'],
-              },
-            },
-            tip_percent: {
-              type: 'number',
-              minimum: 0,
-              maximum: 30,
-              description: '小费比例（%）',
-            },
-            round_up: {
-              type: 'boolean',
-              description: '是否向上取整到元',
-            },
+            total_amount: { type: 'number', minimum: 0, description: '账单总金额（元）' },
+            participants: { type: 'array', description: '参与者列表', items: { type: 'object', properties: { name: { type: 'string', description: '姓名' }, weight: { type: 'number', description: '分摊权重（默认1）' } }, required: ['name'] } },
+            tip_percent: { type: 'number', minimum: 0, maximum: 30, description: '小费比例（%）' },
+            round_up: { type: 'boolean', description: '是否向上取整到元' },
           },
           required: ['total_amount', 'participants'],
         },
         execute: async (args) => {
-          const tip = args.total_amount * ((args.tip_percent || 0) / 100);
+          const tip = args.total_amount * ((args.tip_percent||0)/100);
           const total = args.total_amount + tip;
-          const totalWeight = args.participants.reduce((s, p) => s + (p.weight || 1), 0);
-          const result = args.participants.map(p => {
-            const w = p.weight || 1;
-            let amount = total * (w / totalWeight);
-            if (args.round_up) amount = Math.ceil(amount);
-            return { 姓名: p.name, 权重: w, 应付: `¥${amount.toFixed(2)}` };
-          });
-          return {
-            账单总额: `¥${args.total_amount.toFixed(2)}`,
-            小费: `¥${tip.toFixed(2)}`,
-            合计: `¥${total.toFixed(2)}`,
-            分摊明细: result,
-          };
+          const tw = args.participants.reduce((s,p) => s+(p.weight||1), 0);
+          return { 账单总额: `¥${args.total_amount.toFixed(2)}`, 小费: `¥${tip.toFixed(2)}`, 合计: `¥${total.toFixed(2)}`, 分摊明细: args.participants.map(p => { let a = total*((p.weight||1)/tw); if(args.round_up) a=Math.ceil(a); return { 姓名: p.name, 应付: `¥${a.toFixed(2)}` }; }) };
         },
       });
-      log('已注册：split_bill（AA记账）', 'ok');
+      log('已注册 split_bill（AA记账）', 'ok');
 
-      // 3. 随机决定器
       mc.registerTool({
         name: 'random_picker',
-        description: '选择困难症终结者！输入多个选项，随机帮你做出决定，还能排除不想要的。',
+        description: '选择困难症终结者！输入多个选项，随机帮你做出决定。',
         inputSchema: {
           type: 'object',
           properties: {
-            question: {
-              type: 'string',
-              description: '你纠结的问题（如"今天吃什么"）',
-            },
-            options: {
-              type: 'array',
-              items: { type: 'string' },
-              description: '候选选项列表',
-              minItems: 2,
-            },
-            exclude: {
-              type: 'array',
-              items: { type: 'string' },
-              description: '要排除的选项',
-            },
-            pick_count: {
-              type: 'integer',
-              minimum: 1,
-              description: '选几个（默认1）',
-            },
+            question: { type: 'string', description: '你纠结的问题' },
+            options: { type: 'array', items: { type: 'string' }, description: '候选选项', minItems: 2 },
+            exclude: { type: 'array', items: { type: 'string' }, description: '排除的选项' },
+            pick_count: { type: 'integer', minimum: 1, description: '选几个（默认1）' },
           },
           required: ['options'],
         },
         execute: async (args) => {
           let pool = [...args.options];
           if (args.exclude) pool = pool.filter(o => !args.exclude.includes(o));
-          const count = Math.min(args.pick_count || 1, pool.length);
-          const shuffled = pool.sort(() => Math.random() - 0.5);
-          const picked = shuffled.slice(0, count);
-          const emojis = ['🎯','🎲','✨','🌟','🔮','🎪','🎰'];
-          return {
-            问题: args.question || '随机选择',
-            候选数: pool.length,
-            结果: picked.length === 1 ? picked[0] : picked,
-            表情: emojis[Math.floor(Math.random() * emojis.length)],
-            命运宣言: `在 ${pool.length} 个选项中，命运之轮指向了「${picked[0]}」！`,
-          };
+          const n = Math.min(args.pick_count||1, pool.length);
+          const picked = pool.sort(()=>Math.random()-.5).slice(0,n);
+          return { 问题: args.question||'随机选择', 候选数: pool.length, 结果: n===1?picked[0]:picked, 命运宣言: `在 ${pool.length} 个选项中，命运之轮指向了「${picked[0]}」！` };
         },
       });
-      log('已注册：random_picker（随机决定器）', 'ok');
+      log('已注册 random_picker（随机决定器）', 'ok');
 
-      // 4. 世界时钟
       mc.registerTool({
         name: 'world_clock',
         description: '查询全球城市的当前时间，支持多城市对比和时差计算。',
         inputSchema: {
           type: 'object',
           properties: {
-            cities: {
-              type: 'array',
-              items: {
-                type: 'string',
-                enum: ['北京','东京','纽约','伦敦','巴黎','悉尼','迪拜','莫斯科','洛杉矶','新加坡'],
-              },
-              description: '要查询的城市列表',
-              minItems: 1,
-            },
-            format: {
-              type: 'string',
-              enum: ['24小时制', '12小时制'],
-              description: '时间格式',
-            },
+            cities: { type: 'array', items: { type: 'string', enum: ['北京','东京','纽约','伦敦','巴黎','悉尼','迪拜','莫斯科','洛杉矶','新加坡'] }, description: '要查询的城市', minItems: 1 },
+            format: { type: 'string', enum: ['24小时制','12小时制'], description: '时间格式' },
           },
           required: ['cities'],
         },
         annotations: { readOnlyHint: true },
         execute: async (args) => {
-          const offsets = {
-            '北京': 8, '东京': 9, '纽约': -4, '伦敦': 1, '巴黎': 2,
-            '悉尼': 11, '迪拜': 4, '莫斯科': 3, '洛杉矶': -7, '新加坡': 8,
-          };
+          const offsets = { '北京':8,'东京':9,'纽约':-4,'伦敦':1,'巴黎':2,'悉尼':11,'迪拜':4,'莫斯科':3,'洛杉矶':-7,'新加坡':8 };
           const now = new Date();
-          const use12 = args.format === '12小时制';
           const result = args.cities.map(city => {
-            const offset = offsets[city] || 0;
-            const local = new Date(now.getTime() + (offset - 8) * 3600000);
-            const h = local.getHours();
-            const m = local.getMinutes().toString().padStart(2, '0');
-            const timeStr = use12
-              ? `${h % 12 || 12}:${m} ${h >= 12 ? '下午' : '上午'}`
-              : `${h.toString().padStart(2, '0')}:${m}`;
-            return { 城市: city, 当前时间: timeStr, 时区: `UTC${offset >= 0 ? '+' : ''}${offset}` };
+            const o = offsets[city]||0;
+            const local = new Date(now.getTime()+(o-8)*3600000);
+            const h = local.getHours(), m = String(local.getMinutes()).padStart(2,'0');
+            const t = args.format==='12小时制' ? `${h%12||12}:${m} ${h>=12?'下午':'上午'}` : `${String(h).padStart(2,'0')}:${m}`;
+            return { 城市: city, 当前时间: t, 时区: `UTC${o>=0?'+':''}${o}` };
           });
-          if (args.cities.length >= 2) {
-            const diff = Math.abs((offsets[args.cities[0]] || 0) - (offsets[args.cities[1]] || 0));
-            result.push({ 时差: `${args.cities[0]} 与 ${args.cities[1]} 相差 ${diff} 小时` });
-          }
+          if (args.cities.length>=2) result.push({ 时差: `${args.cities[0]} 与 ${args.cities[1]} 相差 ${Math.abs((offsets[args.cities[0]]||0)-(offsets[args.cities[1]]||0))} 小时` });
           return { 查询时间: now.toISOString(), 结果: result };
         },
       });
-      log('已注册：world_clock（世界时钟）', 'ok');
+      log('已注册 world_clock（世界时钟）', 'ok');
 
-      // 5. 密码生成器
       mc.registerTool({
         name: 'gen_password',
         description: '生成安全的随机密码，自定义长度和字符类型，同时评估密码强度。',
         inputSchema: {
           type: 'object',
           properties: {
-            length: {
-              type: 'integer',
-              minimum: 4,
-              maximum: 64,
-              description: '密码长度（4-64）',
-            },
+            length: { type: 'integer', minimum: 4, maximum: 64, description: '密码长度' },
             uppercase: { type: 'boolean', description: '包含大写字母' },
             lowercase: { type: 'boolean', description: '包含小写字母' },
             numbers: { type: 'boolean', description: '包含数字' },
             symbols: { type: 'boolean', description: '包含特殊符号' },
-            count: {
-              type: 'integer',
-              minimum: 1,
-              maximum: 10,
-              description: '生成几个密码',
-            },
-            exclude_chars: {
-              type: 'string',
-              description: '要排除的字符（如 "0Ol1I"）',
-            },
+            count: { type: 'integer', minimum: 1, maximum: 10, description: '生成几个' },
+            exclude_chars: { type: 'string', description: '排除的字符' },
           },
           required: ['length'],
         },
         execute: async (args) => {
-          let chars = '';
-          if (args.uppercase !== false) chars += 'ABCDEFGHIJKLMNOPQRSTUVWXYZ';
-          if (args.lowercase !== false) chars += 'abcdefghijklmnopqrstuvwxyz';
-          if (args.numbers !== false) chars += '0123456789';
-          if (args.symbols) chars += '!@#$%^&*()_+-=[]{}|;:,.<>?';
-          if (args.exclude_chars) {
-            for (const c of args.exclude_chars) chars = chars.replace(new RegExp(c.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g'), '');
-          }
-          if (!chars) chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
-          const count = args.count || 1;
-          const passwords = [];
-          for (let i = 0; i < count; i++) {
-            let pw = '';
-            for (let j = 0; j < args.length; j++) pw += chars[Math.floor(Math.random() * chars.length)];
-            passwords.push(pw);
-          }
-          const strength = args.length >= 16 && args.symbols ? '极强' :
-                          args.length >= 12 ? '强' :
-                          args.length >= 8 ? '中等' : '弱';
-          return {
-            密码: count === 1 ? passwords[0] : passwords,
-            长度: args.length,
-            字符集大小: chars.length,
-            强度评级: strength,
-            熵: `${(Math.log2(chars.length) * args.length).toFixed(1)} bits`,
-          };
+          let c = '';
+          if(args.uppercase!==false) c+='ABCDEFGHIJKLMNOPQRSTUVWXYZ';
+          if(args.lowercase!==false) c+='abcdefghijklmnopqrstuvwxyz';
+          if(args.numbers!==false) c+='0123456789';
+          if(args.symbols) c+='!@#$%^&*()_+-=[]{}|;:,.<>?';
+          if(args.exclude_chars) for(const ch of args.exclude_chars) c=c.replaceAll(ch,'');
+          if(!c) c='abcdefghijklmnopqrstuvwxyz0123456789';
+          const n=args.count||1, pws=[];
+          for(let i=0;i<n;i++){let p='';for(let j=0;j<args.length;j++)p+=c[~~(Math.random()*c.length)];pws.push(p);}
+          const s = args.length>=16&&args.symbols?'极强':args.length>=12?'强':args.length>=8?'中等':'弱';
+          return { 密码: n===1?pws[0]:pws, 长度: args.length, 强度: s, 熵: `${(Math.log2(c.length)*args.length).toFixed(1)} bits` };
         },
       });
-      log('已注册：gen_password（密码生成器）', 'ok');
+      log('已注册 gen_password（密码生成器）', 'ok');
 
-      // 6. 单位换算
       mc.registerTool({
         name: 'unit_convert',
-        description: '通用单位换算工具，支持长度、重量、温度、面积、数据存储等类别的互转。',
+        description: '通用单位换算，支持长度、重量、温度、面积、数据存储。',
         inputSchema: {
           type: 'object',
           properties: {
-            value: { type: 'number', description: '要换算的数值' },
-            category: {
-              type: 'string',
-              enum: ['长度', '重量', '温度', '面积', '数据存储'],
-              description: '换算类别',
-            },
-            from: { type: 'string', description: '源单位（如 "千米"、"千克"、"摄氏度"）' },
+            value: { type: 'number', description: '数值' },
+            category: { type: 'string', enum: ['长度','重量','温度','面积','数据存储'], description: '类别' },
+            from: { type: 'string', description: '源单位' },
             to: { type: 'string', description: '目标单位' },
           },
           required: ['value', 'category', 'from', 'to'],
         },
         execute: async (args) => {
-          const conversions = {
-            '长度': { '米': 1, '千米': 1000, '厘米': 0.01, '毫米': 0.001, '英里': 1609.34, '英尺': 0.3048, '英寸': 0.0254 },
-            '重量': { '千克': 1, '克': 0.001, '毫克': 0.000001, '吨': 1000, '磅': 0.453592, '盎司': 0.0283495 },
-            '面积': { '平方米': 1, '平方千米': 1e6, '公顷': 1e4, '亩': 666.67, '平方英尺': 0.0929 },
-            '数据存储': { 'B': 1, 'KB': 1024, 'MB': 1048576, 'GB': 1073741824, 'TB': 1099511627776 },
+          const tables = {
+            '长度':{'米':1,'千米':1000,'厘米':.01,'毫米':.001,'英里':1609.34,'英尺':.3048,'英寸':.0254},
+            '重量':{'千克':1,'克':.001,'毫克':1e-6,'吨':1000,'磅':.453592,'盎司':.0283495},
+            '面积':{'平方米':1,'平方千米':1e6,'公顷':1e4,'亩':666.67,'平方英尺':.0929},
+            '数据存储':{'B':1,'KB':1024,'MB':1048576,'GB':1073741824,'TB':1099511627776},
           };
-          if (args.category === '温度') {
-            let celsius;
-            if (args.from === '摄氏度') celsius = args.value;
-            else if (args.from === '华氏度') celsius = (args.value - 32) * 5 / 9;
-            else if (args.from === '开尔文') celsius = args.value - 273.15;
-            else return { 错误: `未知单位：${args.from}` };
-            let result;
-            if (args.to === '摄氏度') result = celsius;
-            else if (args.to === '华氏度') result = celsius * 9 / 5 + 32;
-            else if (args.to === '开尔文') result = celsius + 273.15;
-            else return { 错误: `未知单位：${args.to}` };
-            return { 原始: `${args.value} ${args.from}`, 结果: `${parseFloat(result.toFixed(4))} ${args.to}`, 公式: `${args.from} → ${args.to}` };
+          if(args.category==='温度'){
+            let c; if(args.from==='摄氏度')c=args.value; else if(args.from==='华氏度')c=(args.value-32)*5/9; else if(args.from==='开尔文')c=args.value-273.15; else return{错误:`未知: ${args.from}`};
+            let r; if(args.to==='摄氏度')r=c; else if(args.to==='华氏度')r=c*9/5+32; else if(args.to==='开尔文')r=c+273.15; else return{错误:`未知: ${args.to}`};
+            return{原始:`${args.value} ${args.from}`,结果:`${+r.toFixed(4)} ${args.to}`};
           }
-          const table = conversions[args.category];
-          if (!table || !table[args.from] || !table[args.to]) {
-            return { 错误: '不支持的换算', 支持的单位: table ? Object.keys(table) : [] };
-          }
-          const base = args.value * table[args.from];
-          const result = base / table[args.to];
-          return {
-            原始: `${args.value} ${args.from}`,
-            结果: `${parseFloat(result.toFixed(6))} ${args.to}`,
-            类别: args.category,
-          };
+          const t=tables[args.category];
+          if(!t||!t[args.from]||!t[args.to]) return{错误:'不支持',可用单位:t?Object.keys(t):[]};
+          return{原始:`${args.value} ${args.from}`,结果:`${+(args.value*t[args.from]/t[args.to]).toFixed(6)} ${args.to}`,类别:args.category};
         },
       });
-      log('已注册：unit_convert（单位换算）', 'ok');
+      log('已注册 unit_convert（单位换算）', 'ok');
 
-      log(`共注册 6 个编程式工具 + 2 个声明式工具 = 8 个工具`, 'ok');
+      log(`共 6 个编程式 + 2 个声明式 = 8 个工具就绪`, 'ok');
     }
 
-    // Dynamic tool
-    let dynamicAC = null;
-
-    document.getElementById('btn-register').addEventListener('click', () => {
-      if (!mc) { log('WebMCP API 不可用', 'err'); return; }
-      if (dynamicAC) { log('chatbot 工具已注册，请先注销', 'err'); return; }
-
-      dynamicAC = new AbortController();
+    let dynAC = null;
+    document.getElementById('btn-reg').addEventListener('click', () => {
+      if(!mc){log('API 不可用','err');return;}
+      if(dynAC){log('chatbot 已注册，请先注销','err');return;}
+      dynAC = new AbortController();
       mc.registerTool({
-        name: 'chatbot',
-        description: '一个简单的聊天机器人，可以回答问候、讲笑话或给出建议。',
-        inputSchema: {
-          type: 'object',
-          properties: {
-            message: { type: 'string', description: '你想说什么' },
-            mood: {
-              type: 'string',
-              enum: ['开心', '伤心', '无聊', '生气', '困'],
-              description: '你现在的心情',
-            },
-            style: {
-              type: 'string',
-              enum: ['正经', '搞笑', '文艺', '毒舌'],
-              description: '回复风格',
-            },
-          },
-          required: ['message'],
+        name:'chatbot',
+        description:'简单的聊天机器人，可以回答问候、讲笑话或给出建议。',
+        inputSchema:{type:'object',properties:{message:{type:'string',description:'你想说什么'},mood:{type:'string',enum:['开心','伤心','无聊','生气','困'],description:'心情'},style:{type:'string',enum:['正经','搞笑','文艺','毒舌'],description:'回复风格'}},required:['message']},
+        execute: async(a)=>{
+          const r={开心:['太好了！','快乐会传染！'],伤心:['抱抱，明天会更好','想哭就哭，哭完继续'],无聊:['来猜个谜？','无聊是创造力的前奏'],生气:['深呼吸数到10','别用别人的错惩罚自己'],困:['喝杯咖啡吧','身体说：该休息了']};
+          const m=a.mood||'开心',pool=r[m]||r['开心'];
+          return{回复:pool[~~(Math.random()*pool.length)],你说的:a.message,心情:m,风格:a.style||'正经'};
         },
-        execute: async (args) => {
-          const responses = {
-            '开心': ['太好了！开心最重要！', '快乐会传染的，继续保持！'],
-            '伤心': ['抱抱你，明天会更好的', '想哭就哭，哭完继续当英雄'],
-            '无聊': ['要不要来猜个谜？', '无聊是创造力的前奏'],
-            '生气': ['深呼吸，数到10', '生气是拿别人的错误惩罚自己'],
-            '困': ['去喝杯咖啡吧', '困是身体在说：该休息了'],
-          };
-          const mood = args.mood || '开心';
-          const pool = responses[mood] || responses['开心'];
-          return {
-            回复: pool[Math.floor(Math.random() * pool.length)],
-            你说的: args.message,
-            你的心情: mood,
-            回复风格: args.style || '正经',
-            小贴士: '这是一个演示工具，展示动态注册/注销功能',
-          };
-        },
-      }, { signal: dynamicAC.signal });
-      log('已注册：chatbot（聊天机器人）— 可动态注销', 'ok');
-      showToast('工具已注册', 'chatbot 工具注册成功！打开 WebMCP DevTools 查看');
+      },{signal:dynAC.signal});
+      log('已注册 chatbot（聊天机器人）','ok');
+      toast('工具已注册','chatbot 已添加到 WebMCP');
     });
 
-    document.getElementById('btn-unregister').addEventListener('click', () => {
-      if (!dynamicAC) { log('chatbot 工具未注册', 'err'); return; }
-      dynamicAC.abort();
-      dynamicAC = null;
-      log('已注销：chatbot（通过 AbortSignal）', 'ok');
-      showToast('工具已注销', 'chatbot 工具已从 WebMCP 中移除');
+    document.getElementById('btn-unreg').addEventListener('click', () => {
+      if(!dynAC){log('chatbot 未注册','err');return;}
+      dynAC.abort(); dynAC=null;
+      log('已注销 chatbot','ok');
+      toast('工具已注销','chatbot 已从 WebMCP 移除');
     });
 
-    document.getElementById('btn-list').addEventListener('click', async () => {
-      if (!mc) { log('WebMCP API 不可用', 'err'); return; }
-      try {
-        const tools = mc.listTools?.();
-        if (tools) {
-          log(`listTools() 返回 ${tools.length} 个工具：`, 'info');
-          tools.forEach(t => log(`  📦 ${t.name} — ${t.description?.slice(0, 30)}...`, 'info'));
-        } else {
-          log('listTools() 方法不可用', 'err');
-        }
-      } catch (e) {
-        log('listTools() 出错：' + e, 'err');
-      }
+    document.getElementById('btn-list').addEventListener('click', () => {
+      if(!mc){log('API 不可用','err');return;}
+      try{
+        const tools=mc.listTools?.();
+        if(tools&&tools.length){
+          log(`共 ${tools.length} 个工具：`);
+          tools.forEach(t=>log(`  → ${t.name}`));
+        } else log('未发现已注册的工具（listTools 返回空或不可用）','err');
+      }catch(e){log('listTools 出错: '+e,'err');}
     });
   </script>
 </body>
