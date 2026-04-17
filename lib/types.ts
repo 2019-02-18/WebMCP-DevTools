@@ -1,3 +1,5 @@
+export type ToolSource = 'imperative' | 'declarative';
+
 export interface ToolInfo {
   name: string;
   description: string;
@@ -5,6 +7,7 @@ export interface ToolInfo {
   annotations?: {
     readOnlyHint?: boolean;
   };
+  source?: ToolSource;
 }
 
 export interface TimelineEvent {
@@ -23,6 +26,8 @@ export interface Snapshot {
   tools: ToolInfo[];
 }
 
+export type ExecutionSource = 'manual' | 'ai-panel' | 'mcp-bridge';
+
 export interface ExecutionRecord {
   id: string;
   toolName: string;
@@ -31,6 +36,7 @@ export interface ExecutionRecord {
   duration: number;
   timestamp: number;
   success: boolean;
+  source?: ExecutionSource;
 }
 
 export interface WebMCPDevToolsEvent {

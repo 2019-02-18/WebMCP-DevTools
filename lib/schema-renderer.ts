@@ -15,34 +15,124 @@ interface SchemaProperty {
   properties?: Record<string, SchemaNode>;
   required?: string[];
   readOnly?: boolean;
+  $ref?: string;
+  allOf?: SchemaNode[];
+  oneOf?: SchemaNode[];
+  anyOf?: SchemaNode[];
+  $defs?: Record<string, SchemaNode>;
+  definitions?: Record<string, SchemaNode>;
+  title?: string;
+  const?: unknown;
 }
 
 type SchemaNode = SchemaProperty;
 
-export function renderSchemaTree(schemaStr: string): HTMLElement {
+let rootSchema: SchemaNode = {};
+
+export function renderSchemaTree(schemaStr: string | Record<string, unknown>): HTMLElement {
   const container = document.createElement('div');
   container.className = 'schema-tree';
 
   let schema: SchemaNode;
   try {
-    schema = JSON.parse(schemaStr);
+    schema = typeof schemaStr === 'string' ? JSON.parse(schemaStr) : schemaStr as SchemaNode;
   } catch {
     container.textContent = t('tools.empty_title');
     return container;
   }
 
-  if (schema.type === 'object' && schema.properties) {
-    const required = new Set(schema.required ?? []);
-    for (const [name, prop] of Object.entries(schema.properties)) {
+  rootSchema = schema;
+  const resolved = resolveSchema(schema);
+
+  if (resolved.type === 'object' && resolved.properties) {
+    const required = new Set(resolved.required ?? []);
+    for (const [name, prop] of Object.entries(resolved.properties)) {
       container.appendChild(
-        renderProperty(name, prop, required.has(name), 0),
+        renderProperty(name, resolveSchema(prop), required.has(name), 0),
       );
     }
   } else {
-    container.appendChild(renderTypeNode(schema, 0));
+    container.appendChild(renderTypeNode(resolved, 0));
   }
 
   return container;
+}
+
+function resolveRef(ref: string): SchemaNode {
+  if (!ref.startsWith('#/')) return {};
+  const path = ref.substring(2).split('/');
+  let current: any = rootSchema;
+  for (const segment of path) {
+    current = current?.[segment];
+    if (current == null) return {};
+  }
+  return current as SchemaNode;
+}
+
+function resolveSchema(schema: SchemaNode): SchemaNode {
+  if (schema.$ref) return resolveSchema(resolveRef(schema.$ref));
+  if (schema.allOf) return mergeAllOf(schema);
+  if (schema.oneOf) return resolveOneOf(schema);
+  if (schema.anyOf) return resolveOneOf({ ...schema, oneOf: schema.anyOf });
+  return schema;
+}
+
+function mergeAllOf(schema: SchemaNode): SchemaNode {
+  const merged: SchemaNode = { ...schema };
+  delete merged.allOf;
+  const mergedProperties: Record<string, SchemaNode> = { ...merged.properties };
+  const mergedRequired = new Set(merged.required ?? []);
+
+  for (const sub of schema.allOf ?? []) {
+    const resolved = resolveSchema(sub);
+    if (resolved.properties) {
+      Object.assign(mergedProperties, resolved.properties);
+    }
+    if (resolved.required) {
+      resolved.required.forEach((r) => mergedRequired.add(r));
+    }
+    if (resolved.type && !merged.type) merged.type = resolved.type;
+    if (resolved.description && !merged.description) merged.description = resolved.description;
+  }
+
+  if (Object.keys(mergedProperties).length > 0) {
+    merged.properties = mergedProperties;
+    merged.type = merged.type ?? 'object';
+  }
+  if (mergedRequired.size > 0) {
+    merged.required = [...mergedRequired];
+  }
+  return merged;
+}
+
+function resolveOneOf(schema: SchemaNode): SchemaNode {
+  const variants = (schema.oneOf ?? schema.anyOf ?? []).map(resolveSchema);
+  if (variants.length === 1) return { ...schema, ...variants[0] };
+
+  const merged: SchemaNode = { ...schema };
+  delete merged.oneOf;
+  delete merged.anyOf;
+
+  const types: string[] = [];
+  for (const v of variants) {
+    if (v.type) {
+      if (Array.isArray(v.type)) types.push(...v.type);
+      else types.push(v.type);
+    }
+  }
+  if (types.length > 0) merged.type = [...new Set(types)];
+
+  const allObjectVariants = variants.filter((v) => v.type === 'object' || v.properties);
+  if (allObjectVariants.length > 0) {
+    const mergedProps: Record<string, SchemaNode> = {};
+    for (const v of allObjectVariants) {
+      if (v.properties) Object.assign(mergedProps, v.properties);
+    }
+    merged.properties = mergedProps;
+    merged.type = merged.type ?? 'object';
+  }
+
+  return merged;
 }
 
 function renderProperty(
@@ -130,13 +220,14 @@ function renderProperty(
     row.appendChild(meta);
   }
 
-  if (schema.type === 'object' && schema.properties) {
-    const nested = renderNestedObject(schema, depth, name);
+  const resolved = resolveSchema(schema);
+  if ((resolved.type === 'object' || (!resolved.type && resolved.properties)) && resolved.properties) {
+    const nested = renderNestedObject(resolved, depth, name);
     row.appendChild(nested);
   }
 
-  if (schema.type === 'array' && schema.items) {
-    const nested = renderNestedArray(schema, depth, name);
+  if (resolved.type === 'array' && resolved.items) {
+    const nested = renderNestedArray(resolved, depth, name);
     row.appendChild(nested);
   }
 
@@ -243,13 +334,15 @@ function renderTypeNode(schema: SchemaNode, depth: number): HTMLElement {
 }
 
 function resolveTypeLabel(schema: SchemaNode): string {
-  if (Array.isArray(schema.type)) {
-    return schema.type.join(' | ');
-  }
-  if (schema.type === 'array' && schema.items) {
-    return `${resolveTypeLabel(schema.items)}[]`;
-  }
-  return schema.type ?? 'any';
+  const resolved = resolveSchema(schema);
+  if (resolved.$ref) return '$ref';
+  if (Array.isArray(resolved.type)) return resolved.type.join(' | ');
+  if (resolved.type === 'array' && resolved.items) return `${resolveTypeLabel(resolved.items)}[]`;
+  if (resolved.const !== undefined) return `const(${JSON.stringify(resolved.const)})`;
+  if (resolved.oneOf) return resolved.oneOf.map(resolveTypeLabel).join(' | ');
+  if (resolved.anyOf) return resolved.anyOf.map(resolveTypeLabel).join(' | ');
+  if (resolved.allOf) return 'allOf';
+  return resolved.type ?? 'any';
 }
 
 function baseType(schema: SchemaNode): string {

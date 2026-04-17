@@ -18,6 +18,10 @@ const en: TranslationDict = {
   'tools.empty_hint': 'Make sure <code>chrome://flags/#enable-webmcp-testing</code> is enabled.',
   'tools.no_match': 'No tools match your search.',
   'tools.readonly': 'Read-only',
+  'tools.declarative': 'Declarative',
+  'tools.view_current': 'Current Tab',
+  'tools.view_all': 'All Tabs',
+  'tools.no_tabs': 'No tools found across open tabs.',
   'tools.count': '{count} tool(s)',
   'tools.count_one': '1 tool',
   'tools.count_zero': '0 tools',
@@ -60,6 +64,7 @@ const en: TranslationDict = {
   'export.markdown': 'Copy as Markdown',
   'export.postman': 'Export Postman Collection',
   'export.script': 'Copy as Script',
+  'export.typescript': 'Copy as TypeScript',
   'export.title': 'Export',
   'export.copied': 'Copied!',
 
@@ -91,6 +96,9 @@ const en: TranslationDict = {
   'history.failure': 'Failed',
   'history.input': 'Input',
   'history.output': 'Output',
+  'history.stats_total': 'Total',
+  'history.stats_rate': 'Success Rate',
+  'history.stats_avg': 'Avg Duration',
 
   // Theme
   'theme.system': 'System',
@@ -100,6 +108,29 @@ const en: TranslationDict = {
   // Error messages
   'error.restricted_page': 'WebMCP is not available on this page.',
   'error.injection_failed': 'Failed to inject content scripts.',
+
+  // AI
+  'tab.ai': 'AI',
+  'ai.provider': 'Provider',
+  'ai.api_key': 'API Key',
+  'ai.model': 'Model',
+  'ai.endpoint': 'Endpoint',
+  'ai.save': 'Save',
+  'ai.test': 'Test Connection',
+  'ai.test_success': 'Connection successful!',
+  'ai.test_fail': 'Connection failed.',
+  'ai.placeholder': 'Ask AI about the tools...',
+  'ai.send': 'Send',
+  'ai.no_key': 'Please configure an API key first.',
+  'ai.tool_call': 'Calling tool: {name}',
+  'ai.thinking': 'Thinking...',
+  'ai.saved': 'Settings saved!',
+
+  // Bridge
+  'bridge.connect': 'Connect to MCP Bridge Server',
+  'bridge.disconnect': 'Disconnect from MCP Bridge Server',
+  'bridge.connected': 'Bridge connected',
+  'bridge.disconnected': 'Bridge disconnected',
 
   // Language
   'lang.switch': '中文',
@@ -122,6 +153,10 @@ const zh: TranslationDict = {
   'tools.empty_hint': '请确认已启用 <code>chrome://flags/#enable-webmcp-testing</code>。',
   'tools.no_match': '没有匹配的工具。',
   'tools.readonly': '只读',
+  'tools.declarative': '声明式',
+  'tools.view_current': '当前标签页',
+  'tools.view_all': '全部标签页',
+  'tools.no_tabs': '未在打开的标签页中发现任何工具。',
   'tools.count': '{count} 个工具',
   'tools.count_one': '1 个工具',
   'tools.count_zero': '0 个工具',
@@ -164,6 +199,7 @@ const zh: TranslationDict = {
   'export.markdown': '复制为 Markdown',
   'export.postman': '导出 Postman Collection',
   'export.script': '复制为脚本代码',
+  'export.typescript': '复制为 TypeScript',
   'export.title': '导出',
   'export.copied': '已复制！',
 
@@ -195,6 +231,9 @@ const zh: TranslationDict = {
   'history.failure': '失败',
   'history.input': '输入',
   'history.output': '输出',
+  'history.stats_total': '总计',
+  'history.stats_rate': '成功率',
+  'history.stats_avg': '平均耗时',
 
   // Theme
   'theme.system': '跟随系统',
@@ -204,6 +243,29 @@ const zh: TranslationDict = {
   // Error messages
   'error.restricted_page': '此页面不支持 WebMCP。',
   'error.injection_failed': '内容脚本注入失败。',
+
+  // AI
+  'tab.ai': 'AI',
+  'ai.provider': '服务商',
+  'ai.api_key': 'API 密钥',
+  'ai.model': '模型',
+  'ai.endpoint': '接口地址',
+  'ai.save': '保存',
+  'ai.test': '测试连接',
+  'ai.test_success': '连接成功！',
+  'ai.test_fail': '连接失败。',
+  'ai.placeholder': '向 AI 询问关于工具的问题...',
+  'ai.send': '发送',
+  'ai.no_key': '请先配置 API 密钥。',
+  'ai.tool_call': '调用工具: {name}',
+  'ai.thinking': '思考中...',
+  'ai.saved': '设置已保存！',
+
+  // Bridge
+  'bridge.connect': '连接 MCP Bridge 服务',
+  'bridge.disconnect': '断开 MCP Bridge 服务',
+  'bridge.connected': 'Bridge 已连接',
+  'bridge.disconnected': 'Bridge 未连接',
 
   // Language
   'lang.switch': 'EN',

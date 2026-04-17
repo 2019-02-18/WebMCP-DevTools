@@ -5,7 +5,7 @@ export default defineConfig({
     name: 'WebMCP DevTools',
     description: 'A developer tool for inspecting, testing, and monitoring WebMCP tools registered via navigator.modelContext.',
     version: '1.0.0',
-    permissions: ['sidePanel', 'activeTab', 'scripting', 'storage'],
+    permissions: ['sidePanel', 'activeTab', 'scripting', 'storage', 'alarms'],
     host_permissions: ['<all_urls>'],
     side_panel: {
       default_path: 'sidepanel.html',

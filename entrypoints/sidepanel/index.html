@@ -24,12 +24,14 @@
       <button class="tab-bar__tab" data-tab="timeline" data-i18n="tab.timeline">Timeline</button>
       <button class="tab-bar__tab" data-tab="history" data-i18n="history.title">History</button>
       <button class="tab-bar__tab" data-tab="snapshots" data-i18n="tab.snapshots">Snapshots</button>
+      <button class="tab-bar__tab" data-tab="ai" data-i18n="tab.ai">AI</button>
     </nav>
 
     <main class="content">
       <section id="panel-tools" class="panel panel--active">
         <div class="panel__toolbar">
           <input type="text" id="tools-search" class="search-input" data-i18n-placeholder="tools.search_placeholder" placeholder="Search tools..." />
+          <button id="view-mode-toggle" class="btn btn--sm" data-i18n="tools.view_current" title="Switch view">Current Tab</button>
           <div id="tools-export" class="dropdown"></div>
         </div>
         <div id="tools-list" class="tools-list">
@@ -81,11 +83,56 @@
           <p class="empty-state__hint" data-i18n="snapshots.empty_hint">Save snapshots to compare tool definitions over time.</p>
         </div>
       </section>
+
+      <section id="panel-ai" class="panel">
+        <div id="ai-container" class="ai-container">
+          <div id="ai-setup" class="ai-setup">
+            <div class="ai-setup__form">
+              <label class="ai-setup__label" data-i18n="ai.provider">Provider</label>
+              <select id="ai-provider" class="ai-setup__select">
+                <option value="gemini">Gemini</option>
+                <option value="openai">OpenAI</option>
+                <option value="claude">Claude</option>
+                <option value="deepseek">DeepSeek</option>
+                <option value="custom">Custom</option>
+              </select>
+
+              <label class="ai-setup__label" data-i18n="ai.api_key">API Key</label>
+              <input type="password" id="ai-apikey" class="ai-setup__input" placeholder="sk-..." />
+
+              <label class="ai-setup__label" data-i18n="ai.model">Model</label>
+              <input type="text" id="ai-model" class="ai-setup__input" />
+
+              <div id="ai-custom-endpoint" style="display:none;">
+                <label class="ai-setup__label" data-i18n="ai.endpoint">Endpoint</label>
+                <input type="text" id="ai-endpoint" class="ai-setup__input" placeholder="https://..." />
+              </div>
+
+              <div class="ai-setup__actions">
+                <button id="ai-save" class="btn btn--primary btn--sm" data-i18n="ai.save">Save</button>
+                <button id="ai-test" class="btn btn--sm" data-i18n="ai.test">Test Connection</button>
+              </div>
+            </div>
+          </div>
+          <div id="ai-chat" class="ai-chat" style="display:none;">
+            <div id="ai-messages" class="ai-chat__messages"></div>
+            <div class="ai-chat__input-area">
+              <textarea id="ai-input" class="ai-chat__input" rows="2" data-i18n-placeholder="ai.placeholder" placeholder="Ask AI about the tools..."></textarea>
+              <button id="ai-send" class="btn btn--primary btn--sm" data-i18n="ai.send">Send</button>
+              <button id="ai-settings-btn" class="btn btn--sm">⚙</button>
+            </div>
+          </div>
+        </div>
+      </section>
     </main>
 
     <footer class="status-bar">
       <span id="status-connection" class="status-bar__item status-bar__item--disconnected" data-i18n="status.disconnected">● Disconnected</span>
       <span id="status-tools" class="status-bar__item">0 tools</span>
+      <button id="bridge-toggle" class="bridge-btn" title="MCP Bridge">
+        <span id="bridge-status-icon" class="bridge-btn__icon">○</span>
+        <span>Bridge</span>
+      </button>
     </footer>
   </div>
 

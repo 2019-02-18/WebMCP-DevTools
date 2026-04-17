@@ -74,7 +74,52 @@
 
   <div id="api-status"></div>
 
-  <h2 style="margin: 24px 0 12px;">Registered Tools</h2>
+  <h2 style="margin: 24px 0 12px;">Declarative WebMCP Tools (HTML Form)</h2>
+
+  <div class="card">
+    <h3>contact_form <span class="badge badge--success">declarative</span></h3>
+    <p>A contact form registered via HTML form attributes (toolname/tooldescription).</p>
+    <form toolname="contact_form" tooldescription="Submit a contact message with name, email, and message body.">
+      <div style="display:flex; flex-direction:column; gap:8px; margin-top:8px;">
+        <input name="full_name" type="text" required placeholder="Full Name" style="padding:6px 10px; border:1px solid #e2e8f0; border-radius:4px;" />
+        <input name="email" type="email" required placeholder="Email Address" style="padding:6px 10px; border:1px solid #e2e8f0; border-radius:4px;" />
+        <select name="subject" required style="padding:6px 10px; border:1px solid #e2e8f0; border-radius:4px;">
+          <option value="">Select subject...</option>
+          <option value="general">General Inquiry</option>
+          <option value="support">Technical Support</option>
+          <option value="feedback">Feedback</option>
+        </select>
+        <textarea name="message" required placeholder="Your message..." rows="3" style="padding:6px 10px; border:1px solid #e2e8f0; border-radius:4px; resize:vertical;"></textarea>
+        <label style="display:flex; align-items:center; gap:6px; font-size:13px;">
+          <input name="subscribe" type="checkbox" /> Subscribe to newsletter
+        </label>
+        <button type="submit" class="primary" style="align-self:flex-start;">Send Message</button>
+      </div>
+    </form>
+  </div>
+
+  <div class="card">
+    <h3>reservation <span class="badge badge--success">declarative</span></h3>
+    <p>A restaurant reservation form using declarative WebMCP attributes.</p>
+    <form toolname="make_reservation" tooldescription="Make a restaurant reservation with date, time, and party size.">
+      <div style="display:flex; flex-direction:column; gap:8px; margin-top:8px;">
+        <input name="guest_name" type="text" required placeholder="Guest Name" style="padding:6px 10px; border:1px solid #e2e8f0; border-radius:4px;" />
+        <input name="date" type="date" required style="padding:6px 10px; border:1px solid #e2e8f0; border-radius:4px;" />
+        <input name="party_size" type="number" min="1" max="20" required placeholder="Party size" style="padding:6px 10px; border:1px solid #e2e8f0; border-radius:4px;" />
+        <select name="time_slot" required style="padding:6px 10px; border:1px solid #e2e8f0; border-radius:4px;">
+          <option value="">Select time...</option>
+          <option value="11:30">11:30 AM</option>
+          <option value="12:00">12:00 PM</option>
+          <option value="18:00">6:00 PM</option>
+          <option value="19:00">7:00 PM</option>
+          <option value="20:00">8:00 PM</option>
+        </select>
+        <button type="submit" class="primary" style="align-self:flex-start;">Reserve</button>
+      </div>
+    </form>
+  </div>
+
+  <h2 style="margin: 24px 0 12px;">Imperative WebMCP Tools (JavaScript API)</h2>
 
   <div class="card">
     <h3>search_flights <span class="badge badge--info">registered</span></h3>

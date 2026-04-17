@@ -1,0 +1,40 @@
+{
+  "name": "webmcp-devtools-server",
+  "version": "2.0.0",
+  "description": "MCP Bridge Server for WebMCP DevTools — exposes browser WebMCP tools to AI clients like Claude and Cursor",
+  "type": "module",
+  "bin": {
+    "webmcp-devtools-server": "./dist/cli.js"
+  },
+  "main": "./dist/mcp-server.js",
+  "types": "./dist/mcp-server.d.ts",
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsx src/cli.ts",
+    "prepublishOnly": "npm run build"
+  },
+  "keywords": ["mcp", "webmcp", "chrome-extension", "devtools", "ai", "claude", "cursor", "model-context-protocol", "browser-tools"],
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": ""
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.12.1",
+    "ws": "^8.18.0",
+    "zod": "^3.24.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.0.0",
+    "@types/ws": "^8.5.0",
+    "tsx": "^4.19.0",
+    "typescript": "^5.8.0"
+  }
+}

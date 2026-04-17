@@ -20,15 +20,33 @@ import { applyTheme } from '../../lib/theme';
 import { renderSchemaTree } from '../../lib/schema-renderer';
 import { SchemaForm } from '../../lib/schema-form';
 import { renderJsonHighlight } from '../../lib/json-highlight';
-import { exportAsJSON, exportAsMarkdown, exportAsPostman, exportAsScriptToolConfig } from '../../lib/export';
+import { exportAsJSON, exportAsMarkdown, exportAsPostman, exportAsScriptToolConfig, exportAsTypeScript } from '../../lib/export';
 import { diffTools, renderDiffView } from '../../lib/diff';
 import { icon } from '../../lib/icons';
+import {
+  type AIConfig,
+  type AIProvider,
+  type ChatMessage,
+  chatWithAIStream,
+  testConnection,
+  getDefaultModel,
+} from '../../lib/ai-providers';
+import { renderMarkdown } from '../../lib/markdown';
+
+interface TabToolGroup {
+  tabId: number;
+  title: string;
+  url: string;
+  tools: ToolInfo[];
+}
 
 const tools: ToolInfo[] = [];
 const timelineEvents: TimelineEvent[] = [];
 let executionHistory: ExecutionRecord[] = [];
-let selectedTool: ToolInfo | null = null;
+let selectedTool: (ToolInfo & { _tabId?: number }) | null = null;
 let currentTheme: ThemeSetting = 'system';
+let viewMode: 'current' | 'all' = 'current';
+let allTabTools: TabToolGroup[] = [];
 
 // ===== Tab Bar =====
 function initTabBar() {
@@ -103,6 +121,12 @@ function switchToTab(tabName: string) {
 function renderToolsList() {
   const container = document.getElementById('tools-list')!;
   const searchValue = (document.getElementById('tools-search') as HTMLInputElement)?.value.toLowerCase().trim();
+
+  if (viewMode === 'all') {
+    renderAllTabsToolsList(container, searchValue);
+    return;
+  }
+
   const filtered = searchValue
     ? tools.filter((tool) => tool.name.toLowerCase().includes(searchValue) || tool.description.toLowerCase().includes(searchValue))
     : tools;
@@ -121,6 +145,68 @@ function renderToolsList() {
   filtered.forEach((tool) => container.appendChild(createToolCard(tool)));
 }
 
+function renderAllTabsToolsList(container: HTMLElement, searchValue: string) {
+  container.innerHTML = '';
+
+  if (allTabTools.length === 0) {
+    container.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-state__icon">${icon('search', 40)}</div>
+        <p class="empty-state__text">${t('tools.no_tabs')}</p>
+      </div>`;
+    return;
+  }
+
+  let hasAny = false;
+  allTabTools.forEach((group) => {
+    const filtered = searchValue
+      ? group.tools.filter((tool) => tool.name.toLowerCase().includes(searchValue) || tool.description.toLowerCase().includes(searchValue))
+      : group.tools;
+    if (filtered.length === 0) return;
+    hasAny = true;
+
+    const section = document.createElement('div');
+    section.className = 'tab-group';
+    const header = document.createElement('div');
+    header.className = 'tab-group__header';
+    const titleText = group.title || new URL(group.url || 'about:blank').hostname || `Tab ${group.tabId}`;
+    header.innerHTML = `${icon('globe', 14)} <span class="tab-group__title">${escapeHtml(titleText)}</span> <span class="tab-group__count">${filtered.length}</span>`;
+    section.appendChild(header);
+
+    filtered.forEach((tool) => {
+      const toolWithTab = { ...tool, _tabId: group.tabId };
+      section.appendChild(createToolCard(toolWithTab as any));
+    });
+    container.appendChild(section);
+  });
+
+  if (!hasAny) {
+    container.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-state__icon">${icon('search', 40)}</div>
+        <p class="empty-state__text">${t('tools.no_match')}</p>
+      </div>`;
+  }
+}
+
+function escapeHtml(str: string): string {
+  return str.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+function requestAllTabsTools() {
+  chrome.runtime.sendMessage({ action: 'LIST_ALL_TOOLS' })
+    .then((response) => {
+      if (response?.tabs && Array.isArray(response.tabs)) {
+        allTabTools = response.tabs;
+        if (viewMode === 'all') {
+          renderToolsList();
+          updateStatusBar();
+        }
+      }
+    })
+    .catch(() => {});
+}
+
 function createToolCard(tool: ToolInfo): HTMLElement {
   const card = document.createElement('div');
   card.className = 'tool-card';
@@ -133,6 +219,12 @@ function createToolCard(tool: ToolInfo): HTMLElement {
   nameEl.textContent = tool.name;
   header.appendChild(nameEl);
 
+  if (tool.source === 'declarative') {
+    const badge = document.createElement('span');
+    badge.className = 'tool-card__badge tool-card__badge--declarative';
+    badge.textContent = t('tools.declarative');
+    header.appendChild(badge);
+  }
   if (tool.annotations?.readOnlyHint) {
     const badge = document.createElement('span');
     badge.className = 'tool-card__badge tool-card__badge--readonly';
@@ -166,7 +258,7 @@ function createToolCard(tool: ToolInfo): HTMLElement {
 
   card.addEventListener('click', (e) => {
     if ((e.target as HTMLElement).closest('.tool-card__schema-toggle, .schema-nested__toggle')) return;
-    selectedTool = tool;
+    selectedTool = tool as any;
     renderExecutePanel(tool);
     switchToTab('execute');
   });
@@ -262,7 +354,9 @@ function executeTool(tool: ToolInfo, mode: 'form' | 'raw', schemaForm: SchemaFor
   }
   const start = performance.now();
   getMyWindowId().then((wid) => {
-  chrome.runtime.sendMessage({ action: 'EXECUTE_TOOL', payload: { name: tool.name, args }, windowId: wid })
+  const msg: any = { action: 'EXECUTE_TOOL', payload: { name: tool.name, args }, windowId: wid };
+  if ((tool as any)._tabId != null) msg.targetTabId = (tool as any)._tabId;
+  chrome.runtime.sendMessage(msg)
     .then(async (response) => {
       const duration = performance.now() - start;
       const success = !response?.error;
@@ -275,6 +369,7 @@ function executeTool(tool: ToolInfo, mode: 'form' | 'raw', schemaForm: SchemaFor
         duration,
         timestamp: Date.now(),
         success,
+        source: 'manual',
       };
       await addExecutionRecord(record);
       executionHistory.push(record);
@@ -292,6 +387,7 @@ function executeTool(tool: ToolInfo, mode: 'form' | 'raw', schemaForm: SchemaFor
         duration,
         timestamp: Date.now(),
         success: false,
+        source: 'manual',
       };
       await addExecutionRecord(record);
       executionHistory.push(record);
@@ -414,6 +510,29 @@ function renderHistoryPanel() {
   }
 
   container.innerHTML = '';
+
+  const statsEl = document.createElement('div');
+  statsEl.className = 'history-stats';
+  const total = executionHistory.length;
+  const successes = executionHistory.filter((r) => r.success).length;
+  const failures = total - successes;
+  const avgDuration = executionHistory.reduce((sum, r) => sum + r.duration, 0) / total;
+  const minDuration = Math.min(...executionHistory.map((r) => r.duration));
+  const maxDuration = Math.max(...executionHistory.map((r) => r.duration));
+  const rate = total > 0 ? ((successes / total) * 100).toFixed(0) : '0';
+  statsEl.innerHTML = `
+    <div class="history-stats__row">
+      <span>${t('history.stats_total')}: <strong>${total}</strong></span>
+      <span class="history-stats__success">${t('history.success')}: ${successes}</span>
+      <span class="history-stats__failure">${t('history.failure')}: ${failures}</span>
+      <span>${t('history.stats_rate')}: <strong>${rate}%</strong></span>
+    </div>
+    <div class="history-stats__row">
+      <span>${t('history.stats_avg')}: <strong>${avgDuration.toFixed(1)}ms</strong></span>
+      <span>Min: ${minDuration.toFixed(1)}ms</span>
+      <span>Max: ${maxDuration.toFixed(1)}ms</span>
+    </div>`;
+  container.appendChild(statsEl);
   [...executionHistory].reverse().forEach((record) => {
     const card = document.createElement('div');
     card.className = `history-card ${record.success ? 'history-card--success' : 'history-card--failure'}`;
@@ -426,6 +545,12 @@ function renderHistoryPanel() {
     const statusBadge = document.createElement('span');
     statusBadge.className = `history-card__badge history-card__badge--${record.success ? 'success' : 'failure'}`;
     statusBadge.textContent = record.success ? t('history.success') : t('history.failure');
+    if (record.source && record.source !== 'manual') {
+      const sourceBadge = document.createElement('span');
+      sourceBadge.className = `history-card__badge history-card__badge--source history-card__badge--${record.source}`;
+      sourceBadge.textContent = record.source === 'ai-panel' ? 'AI' : 'Bridge';
+      header.appendChild(sourceBadge);
+    }
     header.appendChild(nameEl);
     header.appendChild(statusBadge);
 
@@ -576,14 +701,18 @@ function showToast(message: string) {
 function updateStatusBar() {
   const connEl = document.getElementById('status-connection')!;
   const toolsEl = document.getElementById('status-tools')!;
-  if (tools.length > 0) {
+  const displayTools = viewMode === 'all'
+    ? allTabTools.reduce((sum, g) => sum + g.tools.length, 0)
+    : tools.length;
+  if (displayTools > 0) {
     connEl.textContent = t('status.connected');
     connEl.className = 'status-bar__item status-bar__item--connected';
   } else {
     connEl.textContent = t('status.disconnected');
     connEl.className = 'status-bar__item status-bar__item--disconnected';
   }
-  toolsEl.textContent = formatToolCount(tools.length);
+  const suffix = viewMode === 'all' ? ` (${allTabTools.length} tabs)` : '';
+  toolsEl.textContent = formatToolCount(displayTools) + suffix;
 }
 
 // ===== Window Tracking =====
@@ -666,6 +795,21 @@ function formatTimestamp(ts: number): string {
   return new Date(ts).toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' });
 }
 
+// ===== View Mode Toggle =====
+function initViewModeToggle() {
+  const btn = document.getElementById('view-mode-toggle');
+  if (!btn) return;
+  btn.addEventListener('click', () => {
+    viewMode = viewMode === 'current' ? 'all' : 'current';
+    btn.textContent = viewMode === 'current' ? t('tools.view_current') : t('tools.view_all');
+    if (viewMode === 'all') {
+      requestAllTabsTools();
+    }
+    renderToolsList();
+    updateStatusBar();
+  });
+}
+
 // ===== Export Dropdown =====
 function initExportDropdown() {
   const container = document.getElementById('tools-export');
@@ -680,7 +824,8 @@ function initExportDropdown() {
   [{ key: 'export.json', fn: () => copyToClipboard(exportAsJSON(tools)) },
    { key: 'export.markdown', fn: () => copyToClipboard(exportAsMarkdown(tools)) },
    { key: 'export.postman', fn: () => copyToClipboard(exportAsPostman(tools)) },
-   { key: 'export.script', fn: () => copyToClipboard(exportAsScriptToolConfig(tools)) }].forEach(({ key, fn }) => {
+   { key: 'export.script', fn: () => copyToClipboard(exportAsScriptToolConfig(tools)) },
+   { key: 'export.typescript', fn: () => copyToClipboard(exportAsTypeScript(tools)) }].forEach(({ key, fn }) => {
     const item = document.createElement('button');
     item.className = 'dropdown__item';
     item.textContent = t(key);
@@ -724,6 +869,7 @@ async function init() {
   renderHistoryPanel();
 
   document.getElementById('tools-search')?.addEventListener('input', () => renderToolsList());
+  initViewModeToggle();
   initExportDropdown();
   document.getElementById('timeline-clear')?.addEventListener('click', () => { timelineEvents.length = 0; renderTimeline(); });
   document.getElementById('history-clear')?.addEventListener('click', async () => {
@@ -732,10 +878,317 @@ async function init() {
     renderHistoryPanel();
   });
 
-  chrome.runtime.onMessage.addListener((message) => handleMessage(message));
+  chrome.runtime.onMessage.addListener(async (message) => {
+    handleMessage(message);
+    if (message.action === 'BRIDGE_STATUS') {
+      updateBridgeUI(message.connected);
+    }
+    if (message.action === 'HISTORY_UPDATED') {
+      executionHistory = await getExecutionHistory();
+      renderHistoryPanel();
+    }
+  });
 
+  initBridge();
+  initAIPanel();
   requestToolsList();
   renderSnapshotsPanel();
+}
+
+// ===== Bridge UI =====
+let bridgeConnected = false;
+
+function initBridge() {
+  const btn = document.getElementById('bridge-toggle');
+  if (!btn) return;
+
+  chrome.runtime.sendMessage({ action: 'BRIDGE_STATUS_REQUEST' })
+    .then((res) => updateBridgeUI(res?.connected ?? false))
+    .catch(() => {});
+
+  btn.addEventListener('click', () => {
+    if (bridgeConnected) {
+      chrome.runtime.sendMessage({ action: 'BRIDGE_DISCONNECT' }).catch(() => {});
+    } else {
+      chrome.runtime.sendMessage({ action: 'BRIDGE_CONNECT', port: 3789 }).catch(() => {});
+    }
+  });
+}
+
+function updateBridgeUI(connected: boolean) {
+  bridgeConnected = connected;
+  const iconEl = document.getElementById('bridge-status-icon');
+  const btn = document.getElementById('bridge-toggle');
+  if (iconEl) {
+    iconEl.textContent = connected ? '●' : '○';
+    iconEl.className = connected ? 'bridge-btn__icon bridge-btn__icon--on' : 'bridge-btn__icon';
+  }
+  if (btn) {
+    btn.title = connected ? t('bridge.disconnect') : t('bridge.connect');
+  }
+}
+
+// ===== AI Panel =====
+let aiConfig: AIConfig | null = null;
+let aiMessages: ChatMessage[] = [];
+let aiProcessing = false;
+
+async function initAIPanel() {
+  const stored = await chrome.storage.local.get('ai_config');
+  if (stored.ai_config) {
+    aiConfig = stored.ai_config;
+    const providerEl = document.getElementById('ai-provider') as HTMLSelectElement;
+    const keyEl = document.getElementById('ai-apikey') as HTMLInputElement;
+    const modelEl = document.getElementById('ai-model') as HTMLInputElement;
+    const endpointEl = document.getElementById('ai-endpoint') as HTMLInputElement;
+    if (providerEl) providerEl.value = aiConfig!.provider;
+    if (keyEl) keyEl.value = aiConfig!.apiKey;
+    if (modelEl) modelEl.value = aiConfig!.model;
+    if (endpointEl && aiConfig!.endpoint) endpointEl.value = aiConfig!.endpoint;
+    if (aiConfig!.provider === 'custom') {
+      document.getElementById('ai-custom-endpoint')!.style.display = '';
+    }
+    showAIChat();
+  }
+
+  const providerEl = document.getElementById('ai-provider') as HTMLSelectElement;
+  providerEl?.addEventListener('change', () => {
+    const modelEl = document.getElementById('ai-model') as HTMLInputElement;
+    const provider = providerEl.value as AIProvider;
+    modelEl.value = getDefaultModel(provider);
+    document.getElementById('ai-custom-endpoint')!.style.display =
+      provider === 'custom' ? '' : 'none';
+  });
+
+  document.getElementById('ai-save')?.addEventListener('click', async () => {
+    const provider = (document.getElementById('ai-provider') as HTMLSelectElement).value as AIProvider;
+    const apiKey = (document.getElementById('ai-apikey') as HTMLInputElement).value.trim();
+    const model = (document.getElementById('ai-model') as HTMLInputElement).value.trim();
+    const endpoint = (document.getElementById('ai-endpoint') as HTMLInputElement).value.trim();
+    if (!apiKey) return;
+    aiConfig = { provider, apiKey, model: model || getDefaultModel(provider), endpoint: endpoint || undefined };
+    await chrome.storage.local.set({ ai_config: aiConfig });
+    showToast(t('ai.saved'));
+    showAIChat();
+  });
+
+  document.getElementById('ai-test')?.addEventListener('click', async () => {
+    const provider = (document.getElementById('ai-provider') as HTMLSelectElement).value as AIProvider;
+    const apiKey = (document.getElementById('ai-apikey') as HTMLInputElement).value.trim();
+    const model = (document.getElementById('ai-model') as HTMLInputElement).value.trim();
+    const endpoint = (document.getElementById('ai-endpoint') as HTMLInputElement).value.trim();
+    if (!apiKey) { showToast(t('ai.no_key'), 'warning'); return; }
+    const cfg: AIConfig = { provider, apiKey, model: model || getDefaultModel(provider), endpoint: endpoint || undefined };
+    const ok = await testConnection(cfg);
+    showToast(ok ? t('ai.test_success') : t('ai.test_fail'), ok ? undefined : 'warning');
+  });
+
+  document.getElementById('ai-send')?.addEventListener('click', sendAIMessage);
+  document.getElementById('ai-input')?.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendAIMessage(); }
+  });
+
+  document.getElementById('ai-settings-btn')?.addEventListener('click', () => {
+    document.getElementById('ai-setup')!.style.display = '';
+    document.getElementById('ai-chat')!.style.display = 'none';
+  });
+}
+
+function showAIChat() {
+  document.getElementById('ai-setup')!.style.display = 'none';
+  document.getElementById('ai-chat')!.style.display = 'flex';
+}
+
+async function sendAIMessage() {
+  if (aiProcessing || !aiConfig) return;
+  const inputEl = document.getElementById('ai-input') as HTMLTextAreaElement;
+  const text = inputEl.value.trim();
+  if (!text) return;
+  inputEl.value = '';
+
+  const toolsSummary = tools.map((t) => `- ${t.name}: ${t.description}`).join('\n');
+  if (aiMessages.length === 0) {
+    aiMessages.push({
+      role: 'system',
+      content: `You are a helpful assistant for WebMCP DevTools. You can see and call WebMCP tools registered on the current page.\n\nAvailable tools:\n${toolsSummary || 'No tools detected.'}\n\nWhen the user asks you to use a tool, call it using the function calling feature. Report results clearly.`,
+    });
+  }
+
+  aiMessages.push({ role: 'user', content: text });
+  renderAIMessages();
+
+  const toolDefs = tools.map((t) => ({
+    name: t.name,
+    description: t.description,
+    inputSchema: t.inputSchema,
+  }));
+
+  aiProcessing = true;
+  addThinkingIndicator();
+
+  try {
+    streamBuffer = '';
+    removeThinkingIndicator();
+
+    let response = await chatWithAIStream(aiConfig, aiMessages, toolDefs, appendStreamChunk);
+    if (response.content) {
+      finalizeStream();
+      aiMessages.push({ role: 'assistant', content: response.content });
+    }
+
+    while (response.toolCalls && response.toolCalls.length > 0) {
+      for (const tc of response.toolCalls) {
+        const callId = tc.id;
+        aiMessages.push({
+          role: 'assistant',
+          content: t('ai.tool_call', { name: tc.name }),
+          toolCall: { id: callId, name: tc.name, args: tc.arguments },
+        });
+        renderAIMessages();
+
+        const result = await executeToolForAI(tc.name, tc.arguments);
+        aiMessages.push({
+          role: 'tool',
+          content: JSON.stringify(result),
+          toolResult: { id: callId, name: tc.name, result },
+        });
+        renderAIMessages();
+      }
+
+      streamBuffer = '';
+      response = await chatWithAIStream(aiConfig, aiMessages, toolDefs, appendStreamChunk);
+      if (response.content) {
+        finalizeStream();
+        aiMessages.push({ role: 'assistant', content: response.content });
+      }
+    }
+  } catch (err: any) {
+    finalizeStream();
+    aiMessages.push({ role: 'assistant', content: `Error: ${err.message}` });
+  }
+
+  aiProcessing = false;
+  removeThinkingIndicator();
+  renderAIMessages();
+}
+
+async function executeToolForAI(name: string, args: any): Promise<any> {
+  const start = performance.now();
+  const wid = await getMyWindowId();
+  try {
+    const response = await chrome.runtime.sendMessage({ action: 'EXECUTE_TOOL', payload: { name, args }, windowId: wid });
+    const duration = performance.now() - start;
+    const record: ExecutionRecord = {
+      id: crypto.randomUUID(),
+      toolName: name,
+      input: args,
+      output: response,
+      duration,
+      timestamp: Date.now(),
+      success: !response?.error,
+      source: 'ai-panel',
+    };
+    await addExecutionRecord(record);
+    executionHistory.push(record);
+    while (executionHistory.length > 20) executionHistory.shift();
+    renderHistoryPanel();
+    return response;
+  } catch (e: any) {
+    const duration = performance.now() - start;
+    const record: ExecutionRecord = {
+      id: crypto.randomUUID(),
+      toolName: name,
+      input: args,
+      output: { error: e.message },
+      duration,
+      timestamp: Date.now(),
+      success: false,
+      source: 'ai-panel',
+    };
+    await addExecutionRecord(record);
+    executionHistory.push(record);
+    while (executionHistory.length > 20) executionHistory.shift();
+    renderHistoryPanel();
+    return { error: e.message };
+  }
+}
+
+function renderAIMessages() {
+  const container = document.getElementById('ai-messages')!;
+  container.innerHTML = '';
+  for (const msg of aiMessages) {
+    if (msg.role === 'system') continue;
+    const el = document.createElement('div');
+    el.className = `ai-msg ai-msg--${msg.role}`;
+
+    if (msg.toolCall) {
+      el.innerHTML = `<div class="ai-msg__tool-call">${icon('zap', 14)} ${escapeHtml(msg.content)}</div>
+        <pre class="ai-msg__code">${escapeHtml(JSON.stringify(msg.toolCall.args, null, 2))}</pre>`;
+    } else if (msg.toolResult) {
+      el.innerHTML = `<pre class="ai-msg__code">${escapeHtml(JSON.stringify(msg.toolResult.result, null, 2))}</pre>`;
+    } else if (msg.role === 'assistant') {
+      el.innerHTML = renderMarkdown(msg.content);
+    } else {
+      el.textContent = msg.content;
+    }
+    container.appendChild(el);
+  }
+  container.scrollTop = container.scrollHeight;
+}
+
+function getOrCreateStreamingBubble(): HTMLDivElement {
+  const container = document.getElementById('ai-messages')!;
+  let el = document.getElementById('ai-streaming') as HTMLDivElement | null;
+  if (!el) {
+    el = document.createElement('div');
+    el.id = 'ai-streaming';
+    el.className = 'ai-msg ai-msg--assistant';
+    container.appendChild(el);
+  }
+  return el;
+}
+
+let streamBuffer = '';
+let streamRenderTimer: ReturnType<typeof setTimeout> | null = null;
+
+function appendStreamChunk(chunk: string) {
+  streamBuffer += chunk;
+  if (!streamRenderTimer) {
+    streamRenderTimer = setTimeout(() => {
+      const el = getOrCreateStreamingBubble();
+      el.innerHTML = renderMarkdown(streamBuffer);
+      const container = document.getElementById('ai-messages')!;
+      container.scrollTop = container.scrollHeight;
+      streamRenderTimer = null;
+    }, 30);
+  }
+}
+
+function finalizeStream() {
+  if (streamRenderTimer) {
+    clearTimeout(streamRenderTimer);
+    streamRenderTimer = null;
+  }
+  const el = getOrCreateStreamingBubble();
+  el.innerHTML = renderMarkdown(streamBuffer);
+  el.removeAttribute('id');
+  const container = document.getElementById('ai-messages')!;
+  container.scrollTop = container.scrollHeight;
+  streamBuffer = '';
+}
+
+function addThinkingIndicator() {
+  const container = document.getElementById('ai-messages')!;
+  const el = document.createElement('div');
+  el.className = 'ai-msg ai-msg--thinking';
+  el.id = 'ai-thinking';
+  el.textContent = t('ai.thinking');
+  container.appendChild(el);
+  container.scrollTop = container.scrollHeight;
+}
+
+function removeThinkingIndicator() {
+  document.getElementById('ai-thinking')?.remove();
 }
 
 document.addEventListener('DOMContentLoaded', init);
