@@ -190,15 +190,21 @@ code {
   flex-shrink: 0;
   overflow-x: auto;
   gap: 0;
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+.tab-bar::-webkit-scrollbar {
+  display: none;
 }
 
 .tab-bar__tab {
-  flex: 1;
-  padding: 8px var(--spacing-sm);
+  flex: 1 1 0;
+  min-width: 0;
+  padding: 8px 2px;
   border: none;
   background: none;
   font-family: var(--font-sans);
-  font-size: var(--text-xs);
+  font-size: 10px;
   font-weight: 600;
   color: var(--color-text-muted);
   cursor: pointer;
@@ -206,7 +212,10 @@ code {
   transition: color var(--transition), border-color var(--transition), background var(--transition);
   white-space: nowrap;
   text-transform: uppercase;
-  letter-spacing: 0.3px;
+  letter-spacing: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-align: center;
 }
 
 .tab-bar__tab:hover {
