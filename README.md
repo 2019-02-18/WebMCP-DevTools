@@ -17,21 +17,74 @@
 | 功能 | 说明 |
 |------|------|
 | **工具检测** | 自动检测当前页面注册的所有 WebMCP 工具 |
-| **Schema 可视化** | 以可折叠树形结构查看输入 Schema |
+| **声明式 WebMCP** | 自动识别 `<form toolname="...">` 声明式工具 |
+| **跨标签页聚合** | 所有标签页的工具统一管理和展示 |
+| **MCP Bridge** | 通过 WebSocket 桥接浏览器工具到 Cursor / Claude Desktop 等 AI 客户端 |
+| **AI 助手** | 内置 AI 面板，支持 Gemini / OpenAI / Claude / DeepSeek，流式输出 + Markdown 渲染 |
+| **Schema 可视化** | 以可折叠树形结构查看输入 Schema，支持 `$ref` / `allOf` / `oneOf` / `anyOf` |
 | **表单生成** | 根据 JSON Schema 自动生成交互式表单 |
 | **工具执行** | 直接从侧面板执行工具并即时查看结果 |
+| **性能统计** | 执行成功率、平均/最小/最大耗时统计 |
+| **统一执行记录** | 标记来源（手动 / AI 面板 / MCP Bridge），跨来源统一展示 |
 | **事件时间线** | 实时追踪工具注册、注销和变更事件 |
-| **执行历史** | 查看最近 20 次执行的输入/输出详情 |
+| **执行历史** | 查看最近执行的输入/输出详情 |
 | **快照 & 对比** | 保存工具定义快照并对比变化 |
-| **导出** | 支持 JSON、Markdown、Postman Collection、JavaScript 代码导出 |
+| **导出** | 支持 JSON、Markdown、Postman Collection、TypeScript 代码导出 |
 | **国际化** | 中英文双语支持，一键切换 |
 | **主题** | 支持跟随系统、明亮、暗色三种主题 |
+
+## MCP Bridge 集成
+
+WebMCP DevTools 可以将浏览器中的工具桥接到外部 AI 客户端（如 Cursor、Claude Desktop）。
+
+### 安装 MCP 服务
+
+```bash
+npm install -g webmcp-devtools-server
+```
+
+### Cursor 配置
+
+在 `.cursor/mcp.json` 中添加：
+
+```json
+{
+  "mcpServers": {
+    "webmcp-devtools": {
+      "command": "npx",
+      "args": ["-y", "webmcp-devtools-server"]
+    }
+  }
+}
+```
+
+### Claude Desktop 配置
+
+在 `claude_desktop_config.json` 中添加：
+
+```json
+{
+  "mcpServers": {
+    "webmcp-devtools": {
+      "command": "npx",
+      "args": ["-y", "webmcp-devtools-server"]
+    }
+  }
+}
+```
+
+### 使用方法
+
+1. 启动 AI 客户端（Cursor / Claude Desktop）
+2. 在浏览器中打开有 WebMCP 工具的页面
+3. 在扩展侧面板中点击 **Bridge** 按钮连接
+4. AI 客户端即可通过 `webmcp_list_tools` 和 `webmcp_call_tool` 发现和调用浏览器工具
 
 ## 安装
 
 ### 从 Chrome Web Store 安装
 
-> 即将上架 — 扩展目前正在审核中。
+在 [Chrome Web Store](https://chromewebstore.google.com/) 搜索 **WebMCP DevTools** 安装。
 
 ### 从源码构建
 
@@ -95,11 +148,18 @@ pnpm build
 │   ├── icons.ts                   # Lucide 风格 SVG 图标定义
 │   ├── theme.ts                   # 主题切换辅助函数
 │   ├── storage.ts                 # chrome.storage.local 工具函数
-│   ├── export.ts                  # 导出：JSON、Markdown、Postman、Script
+│   ├── export.ts                  # 导出：JSON、Markdown、Postman、TypeScript
 │   ├── diff.ts                    # 快照对比引擎
 │   ├── schema-renderer.ts        # JSON Schema → 可折叠树形视图
 │   ├── schema-form.ts            # JSON Schema → 交互式表单
-│   └── json-highlight.ts         # JSON 语法高亮
+│   ├── json-highlight.ts         # JSON 语法高亮
+│   ├── ai-providers.ts           # AI 多 Provider 适配（Gemini/OpenAI/Claude/DeepSeek）
+│   └── markdown.ts               # Markdown 渲染 + 代码语法高亮
+├── server/                        # MCP Bridge Server（npm: webmcp-devtools-server）
+│   └── src/
+│       ├── cli.ts                 # CLI 入口
+│       ├── bridge.ts              # WebSocket Bridge 服务
+│       └── mcp-server.ts          # MCP stdio 协议服务
 ├── test/
 │   └── demo.html                  # 本地测试页面（含模拟 WebMCP 工具）
 ├── scripts/
@@ -136,14 +196,23 @@ pnpm zip
 ## 工作原理
 
 ```
-┌──────────────┐    postMessage     ┌──────────────┐    chrome.runtime     ┌──────────────┐
+                                                                          ┌──────────────┐
+                                                                          │  AI 客户端   │
+                                                                          │ Cursor/Claude│
+                                                                          └──────┬───────┘
+                                                                                 │ stdio (MCP)
+                                                                          ┌──────┴───────┐
+                                                                          │  MCP Bridge  │
+                                                                          │   Server     │
+                                                                          └──────┬───────┘
+                                                                                 │ WebSocket
+┌──────────────┐    postMessage     ┌──────────────┐    chrome.runtime     ┌──────┴───────┐
 │   网页       │ ←───────────────→  │  Content     │ ←──────────────────→  │  Background  │
 │  (MAIN)      │                    │  Scripts     │     .sendMessage      │  (Service     │
 │              │                    │  (ISOLATED)  │                       │   Worker)     │
 │ modelContext │                    │              │                       │              │
-│ .registerTool│                    │              │    chrome.runtime     │              │
-│              │                    │              │ ←──────────────────→  │              │
-└──────────────┘                    └──────────────┘     .sendMessage      └──────┬───────┘
+│ .registerTool│                    │              │                       │              │
+└──────────────┘                    └──────────────┘                       └──────┬───────┘
                                                                                  │
        ┌──────────────┐                                                          │
        │   侧面板     │ ←────────────────────────────────────────────────────────┘
@@ -151,8 +220,8 @@ pnpm zip
        │              │
        │ 工具列表     │
        │ 执行面板     │
+       │ AI 助手      │
        │ 事件时间线   │
-       │ 快照管理     │
        └──────────────┘
 ```
 
@@ -198,21 +267,74 @@ A Chrome extension for inspecting, testing, and monitoring [WebMCP]() tools regi
 | Feature | Description |
 |---------|-------------|
 | **Tool Detection** | Automatically detects all WebMCP tools registered on the current page |
-| **Schema Visualization** | View input schemas as collapsible tree structures |
+| **Declarative WebMCP** | Auto-detects `<form toolname="...">` declarative tools |
+| **Cross-Tab Aggregation** | Unified view of tools from all open tabs |
+| **MCP Bridge** | Bridge browser tools to Cursor / Claude Desktop via WebSocket |
+| **AI Assistant** | Built-in AI panel with Gemini / OpenAI / Claude / DeepSeek, streaming + Markdown |
+| **Schema Visualization** | Collapsible tree view with `$ref` / `allOf` / `oneOf` / `anyOf` support |
 | **Form Generation** | Auto-generates interactive forms from JSON Schema |
 | **Tool Execution** | Execute tools directly from the side panel with instant results |
+| **Performance Stats** | Success rate, avg/min/max duration statistics |
+| **Unified Execution Log** | Source tracking (Manual / AI Panel / MCP Bridge) |
 | **Event Timeline** | Track tool register / unregister / change events in real-time |
-| **Execution History** | Review the last 20 executions with full input & output details |
+| **Execution History** | Review recent executions with full input & output details |
 | **Snapshots & Diff** | Save tool definition snapshots and compare changes over time |
-| **Export** | Export as JSON, Markdown, Postman Collection, or JavaScript code |
+| **Export** | Export as JSON, Markdown, Postman Collection, or TypeScript code |
 | **i18n** | English and Chinese (中文) with one-click toggle |
 | **Themes** | System-aware dark / light theme with manual override |
+
+## MCP Bridge Integration
+
+WebMCP DevTools can bridge browser tools to external AI clients (Cursor, Claude Desktop, etc.).
+
+### Install MCP Server
+
+```bash
+npm install -g webmcp-devtools-server
+```
+
+### Cursor Configuration
+
+Add to `.cursor/mcp.json`:
+
+```json
+{
+  "mcpServers": {
+    "webmcp-devtools": {
+      "command": "npx",
+      "args": ["-y", "webmcp-devtools-server"]
+    }
+  }
+}
+```
+
+### Claude Desktop Configuration
+
+Add to `claude_desktop_config.json`:
+
+```json
+{
+  "mcpServers": {
+    "webmcp-devtools": {
+      "command": "npx",
+      "args": ["-y", "webmcp-devtools-server"]
+    }
+  }
+}
+```
+
+### Usage
+
+1. Start your AI client (Cursor / Claude Desktop)
+2. Open a page with WebMCP tools in the browser
+3. Click the **Bridge** button in the extension's side panel
+4. The AI client can now discover and call browser tools via `webmcp_list_tools` and `webmcp_call_tool`
 
 ## Installation
 
 ### From Chrome Web Store
 
-> Coming soon — the extension is currently under review.
+Search for **WebMCP DevTools** on the [Chrome Web Store](https://chromewebstore.google.com/).
 
 ### From Source
 
@@ -276,11 +398,18 @@ A test page is included at `test/demo.html` with several mock tools. Open it wit
 │   ├── icons.ts                   # Lucide-style SVG icon definitions
 │   ├── theme.ts                   # Theme application helpers
 │   ├── storage.ts                 # chrome.storage.local utilities
-│   ├── export.ts                  # Export: JSON, Markdown, Postman, Script
+│   ├── export.ts                  # Export: JSON, Markdown, Postman, TypeScript
 │   ├── diff.ts                    # Snapshot diff engine
 │   ├── schema-renderer.ts        # JSON Schema → collapsible tree view
 │   ├── schema-form.ts            # JSON Schema → interactive form
-│   └── json-highlight.ts         # JSON syntax highlighter
+│   ├── json-highlight.ts         # JSON syntax highlighter
+│   ├── ai-providers.ts           # Multi-provider AI adapter (Gemini/OpenAI/Claude/DeepSeek)
+│   └── markdown.ts               # Markdown rendering + code syntax highlighting
+├── server/                        # MCP Bridge Server (npm: webmcp-devtools-server)
+│   └── src/
+│       ├── cli.ts                 # CLI entry point
+│       ├── bridge.ts              # WebSocket Bridge service
+│       └── mcp-server.ts          # MCP stdio protocol server
 ├── test/
 │   └── demo.html                  # Local test page with mock WebMCP tools
 ├── scripts/
@@ -317,14 +446,23 @@ pnpm zip
 ## How It Works
 
 ```
-┌──────────────┐    postMessage     ┌──────────────┐    chrome.runtime     ┌──────────────┐
+                                                                          ┌──────────────┐
+                                                                          │  AI Client   │
+                                                                          │ Cursor/Claude│
+                                                                          └──────┬───────┘
+                                                                                 │ stdio (MCP)
+                                                                          ┌──────┴───────┐
+                                                                          │  MCP Bridge  │
+                                                                          │   Server     │
+                                                                          └──────┬───────┘
+                                                                                 │ WebSocket
+┌──────────────┐    postMessage     ┌──────────────┐    chrome.runtime     ┌──────┴───────┐
 │  Web Page    │ ←───────────────→  │   Content    │ ←──────────────────→  │  Background  │
 │  (MAIN)      │                    │   Scripts    │     .sendMessage      │  (Service     │
 │              │                    │  (ISOLATED)  │                       │   Worker)     │
 │ modelContext │                    │              │                       │              │
-│ .registerTool│                    │              │    chrome.runtime     │              │
-│              │                    │              │ ←──────────────────→  │              │
-└──────────────┘                    └──────────────┘     .sendMessage      └──────┬───────┘
+│ .registerTool│                    │              │                       │              │
+└──────────────┘                    └──────────────┘                       └──────┬───────┘
                                                                                  │
        ┌──────────────┐                                                          │
        │  Side Panel  │ ←────────────────────────────────────────────────────────┘
@@ -332,8 +470,8 @@ pnpm zip
        │              │
        │ Tools list   │
        │ Execute      │
+       │ AI Assistant │
        │ Timeline     │
-       │ Snapshots    │
        └──────────────┘
 ```
 

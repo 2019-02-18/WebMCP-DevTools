@@ -1,0 +1,1 @@
+docs: update README with V2.0 features, MCP Bridge integration guide, and updated architecture
