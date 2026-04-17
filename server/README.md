@@ -1,6 +1,6 @@
 # webmcp-devtools-server
 
-MCP Bridge Server for WebMCP DevTools — exposes browser WebMCP tools to AI clients (Cursor, Claude Desktop, etc.) via the [Model Context Protocol](https://modelcontextprotocol.io).
+MCP Bridge Server for [WebMCP DevTools](https://github.com/2019-02-18/WebMCP-DevTools) — exposes browser WebMCP tools to AI clients (Cursor, Claude Desktop, etc.) via the [Model Context Protocol](https://modelcontextprotocol.io).
 
 ## How It Works
 
@@ -69,7 +69,7 @@ Executes a WebMCP tool by name.
 
 ## Usage
 
-1. Install the WebMCP DevTools Chrome extension
+1. Install the [WebMCP DevTools Chrome extension](https://github.com/2019-02-18/WebMCP-DevTools)
 2. Open a page with WebMCP tools
 3. Click the Bridge button in the extension's side panel
 4. The AI client can now discover and call browser tools

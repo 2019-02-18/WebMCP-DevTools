@@ -21,7 +21,7 @@
   "license": "MIT",
   "repository": {
     "type": "git",
-    "url": ""
+    "url": "https://github.com/2019-02-18/WebMCP-DevTools"
   },
   "engines": {
     "node": ">=18.0.0"
