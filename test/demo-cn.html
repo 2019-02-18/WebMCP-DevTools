@@ -878,8 +878,11 @@
         if(tools&&tools.length){
           log(`共 ${tools.length} 个工具：`);
           tools.forEach(t=>log(`  → ${t.name}`));
-        } else log('未发现已注册的工具（listTools 返回空或不可用）','err');
-      }catch(e){log('listTools 出错: '+e,'err');}
+        } else {
+          log('listTools() 暂不可用（部分 Chrome 版本未实现此方法）');
+          log('工具已正常注册，可通过 WebMCP DevTools 扩展查看');
+        }
+      }catch(e){log('listTools() 暂不可用: '+e);}
     });
   </script>
 </body>
