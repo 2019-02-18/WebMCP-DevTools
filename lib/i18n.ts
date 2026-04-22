@@ -17,6 +17,7 @@ const en: TranslationDict = {
   'tools.empty_title': 'No WebMCP tools detected on this page.',
   'tools.empty_hint': 'Make sure <code>chrome://flags/#enable-webmcp-testing</code> is enabled.',
   'tools.no_match': 'No tools match your search.',
+  'tools.refreshed': 'Tools refreshed',
   'tools.readonly': 'Read-only',
   'tools.declarative': 'Declarative',
   'tools.view_current': 'Current Tab',
@@ -125,6 +126,9 @@ const en: TranslationDict = {
   'ai.tool_call': 'Calling tool: {name}',
   'ai.thinking': 'Thinking...',
   'ai.saved': 'Settings saved!',
+  'ai.new_conversation': 'New Chat',
+  'ai.no_history': 'No chat history yet',
+  'ai.tool_limit': 'Reached maximum tool call limit. Please try rephrasing your request.',
 
   // Bridge
   'bridge.connect': 'Connect to MCP Bridge Server',
@@ -152,6 +156,7 @@ const zh: TranslationDict = {
   'tools.empty_title': '当前页面未检测到任何 WebMCP 工具。',
   'tools.empty_hint': '请确认已启用 <code>chrome://flags/#enable-webmcp-testing</code>。',
   'tools.no_match': '没有匹配的工具。',
+  'tools.refreshed': '工具已刷新',
   'tools.readonly': '只读',
   'tools.declarative': '声明式',
   'tools.view_current': '当前标签页',
@@ -260,6 +265,9 @@ const zh: TranslationDict = {
   'ai.tool_call': '调用工具: {name}',
   'ai.thinking': '思考中...',
   'ai.saved': '设置已保存！',
+  'ai.new_conversation': '新对话',
+  'ai.no_history': '暂无对话历史',
+  'ai.tool_limit': '已达到工具调用次数上限，请尝试重新描述您的需求。',
 
   // Bridge
   'bridge.connect': '连接 MCP Bridge 服务',

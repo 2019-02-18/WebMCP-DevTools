@@ -340,6 +340,13 @@ code {
   border-radius: var(--radius-sm);
 }
 
+.btn--icon {
+  padding: 3px 5px;
+  font-size: 14px;
+  line-height: 1;
+  min-width: 24px;
+}
+
 .btn--primary {
   background: var(--color-primary);
   border-color: var(--color-primary);
@@ -522,6 +529,95 @@ code {
   height: 100%;
 }
 
+.ai-chat__toolbar {
+  display: flex;
+  gap: 4px;
+  padding: 6px var(--spacing-sm);
+  border-bottom: 1px solid var(--color-border);
+  flex-shrink: 0;
+  align-items: center;
+}
+
+.ai-chat__toolbar-spacer {
+  flex: 1;
+}
+
+.ai-history {
+  flex-shrink: 0;
+  max-height: 200px;
+  overflow-y: auto;
+  border-bottom: 1px solid var(--color-border);
+}
+
+.ai-history__list {
+  padding: 4px;
+}
+
+.ai-history__item {
+  display: flex;
+  align-items: center;
+  padding: 6px 8px;
+  border-radius: var(--radius-sm);
+  cursor: pointer;
+  font-size: 12px;
+  gap: 6px;
+  transition: background 0.15s;
+}
+
+.ai-history__item:hover {
+  background: var(--color-surface);
+}
+
+.ai-history__item--active {
+  background: var(--color-primary);
+  color: #fff;
+}
+
+.ai-history__item--active:hover {
+  background: var(--color-primary);
+}
+
+.ai-history__title {
+  flex: 1;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ai-history__time {
+  font-size: 10px;
+  opacity: 0.6;
+  flex-shrink: 0;
+}
+
+.ai-history__delete {
+  opacity: 0;
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 14px;
+  color: var(--color-text-secondary);
+  padding: 0 2px;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.ai-history__item:hover .ai-history__delete {
+  opacity: 0.6;
+}
+
+.ai-history__delete:hover {
+  opacity: 1 !important;
+  color: var(--color-danger);
+}
+
+.ai-history__empty {
+  padding: 12px;
+  text-align: center;
+  color: var(--color-text-secondary);
+  font-size: 12px;
+}
+
 .ai-chat__messages {
   flex: 1;
   overflow-y: auto;
@@ -672,6 +768,18 @@ h3.md-h { font-size: 13px; }
   font-size: 12px;
   overflow-x: auto;
   line-height: 1.5;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+.md-code-pre code {
+  background: transparent;
+  padding: 0;
+  border: none;
+  font-size: inherit;
+  color: inherit;
+}
+.md-code-pre span {
+  background: transparent !important;
 }
 [data-theme="light"] .md-code-pre {
   background: #f8fafc;

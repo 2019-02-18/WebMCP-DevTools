@@ -789,6 +789,19 @@ function requestToolsList() {
   });
 }
 
+async function requestToolsListAsync(): Promise<void> {
+  try {
+    const wid = await getMyWindowId();
+    const response = await chrome.runtime.sendMessage({ action: 'LIST_TOOLS', windowId: wid });
+    if (response?.tools && Array.isArray(response.tools)) {
+      tools.length = 0;
+      tools.push(...response.tools);
+      renderToolsList();
+      updateStatusBar();
+    }
+  } catch {}
+}
+
 // ===== Utilities =====
 function formatTimestamp(ts: number): string {
   if (ts < 1e10) return `${ts.toFixed(1)}ms`;
@@ -869,6 +882,10 @@ async function init() {
   renderHistoryPanel();
 
   document.getElementById('tools-search')?.addEventListener('input', () => renderToolsList());
+  document.getElementById('tools-refresh')?.addEventListener('click', () => {
+    requestToolsList();
+    showToast(t('tools.refreshed'));
+  });
   initViewModeToggle();
   initExportDropdown();
   document.getElementById('timeline-clear')?.addEventListener('click', () => { timelineEvents.length = 0; renderTimeline(); });
@@ -933,7 +950,138 @@ let aiConfig: AIConfig | null = null;
 let aiMessages: ChatMessage[] = [];
 let aiProcessing = false;
 
+interface AIChatSession {
+  id: string;
+  title: string;
+  messages: ChatMessage[];
+  createdAt: number;
+  updatedAt: number;
+}
+
+let aiSessions: AIChatSession[] = [];
+let currentSessionId: string | null = null;
+let historyPanelOpen = false;
+
+function generateSessionTitle(messages: ChatMessage[]): string {
+  const firstUserMsg = messages.find((m) => m.role === 'user');
+  if (!firstUserMsg) return t('ai.new_conversation');
+  const text = firstUserMsg.content;
+  return text.length > 30 ? text.slice(0, 30) + '…' : text;
+}
+
+async function loadAISessions() {
+  try {
+    const stored = await chrome.storage.local.get('ai_sessions');
+    aiSessions = (stored.ai_sessions as AIChatSession[] | undefined) || [];
+  } catch {
+    aiSessions = [];
+  }
+}
+
+async function saveAISessions() {
+  try {
+    while (aiSessions.length > 20) aiSessions.pop();
+    await chrome.storage.local.set({ ai_sessions: aiSessions });
+  } catch {}
+}
+
+function saveCurrentSession() {
+  if (!currentSessionId || aiMessages.length <= 1) return;
+  const idx = aiSessions.findIndex((s) => s.id === currentSessionId);
+  const session: AIChatSession = {
+    id: currentSessionId,
+    title: generateSessionTitle(aiMessages),
+    messages: [...aiMessages],
+    createdAt: idx >= 0 ? aiSessions[idx].createdAt : Date.now(),
+    updatedAt: Date.now(),
+  };
+  if (idx >= 0) {
+    aiSessions[idx] = session;
+  } else {
+    aiSessions.unshift(session);
+  }
+  saveAISessions();
+}
+
+function startNewChat() {
+  saveCurrentSession();
+  currentSessionId = crypto.randomUUID();
+  aiMessages.length = 0;
+  const messagesEl = document.getElementById('ai-messages');
+  if (messagesEl) messagesEl.innerHTML = '';
+  if (historyPanelOpen) renderHistoryList();
+}
+
+function loadSession(sessionId: string) {
+  saveCurrentSession();
+  const session = aiSessions.find((s) => s.id === sessionId);
+  if (!session) return;
+  currentSessionId = session.id;
+  aiMessages.length = 0;
+  aiMessages.push(...session.messages);
+  renderAIMessages();
+  if (historyPanelOpen) renderHistoryList();
+}
+
+function deleteSession(sessionId: string) {
+  aiSessions = aiSessions.filter((s) => s.id !== sessionId);
+  saveAISessions();
+  if (currentSessionId === sessionId) {
+    startNewChat();
+  }
+  renderHistoryList();
+}
+
+function toggleHistoryPanel() {
+  historyPanelOpen = !historyPanelOpen;
+  const panel = document.getElementById('ai-history-panel');
+  if (panel) {
+    panel.style.display = historyPanelOpen ? '' : 'none';
+    if (historyPanelOpen) renderHistoryList();
+  }
+}
+
+function renderHistoryList() {
+  const list = document.getElementById('ai-history-list');
+  if (!list) return;
+
+  if (aiSessions.length === 0) {
+    list.innerHTML = `<div class="ai-history__empty">${t('ai.no_history')}</div>`;
+    return;
+  }
+
+  list.innerHTML = aiSessions.map((s) => {
+    const isActive = s.id === currentSessionId;
+    const time = new Date(s.updatedAt).toLocaleDateString(undefined, { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+    return `<div class="ai-history__item${isActive ? ' ai-history__item--active' : ''}" data-session-id="${s.id}">
+      <span class="ai-history__title">${escapeHtml(s.title)}</span>
+      <span class="ai-history__time">${time}</span>
+      <button class="ai-history__delete" data-delete-id="${s.id}" title="Delete">×</button>
+    </div>`;
+  }).join('');
+
+  list.querySelectorAll('.ai-history__item').forEach((el) => {
+    el.addEventListener('click', (e) => {
+      const target = e.target as HTMLElement;
+      if (target.classList.contains('ai-history__delete')) return;
+      const sid = (el as HTMLElement).dataset.sessionId!;
+      loadSession(sid);
+    });
+  });
+
+  list.querySelectorAll('.ai-history__delete').forEach((btn) => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const sid = (btn as HTMLElement).dataset.deleteId!;
+      deleteSession(sid);
+    });
+  });
+}
+
 async function initAIPanel() {
+  await loadAISessions();
+  currentSessionId = crypto.randomUUID();
+
   const stored = await chrome.storage.local.get('ai_config');
   if (stored.ai_config) {
     aiConfig = stored.ai_config;
@@ -992,6 +1140,9 @@ async function initAIPanel() {
     document.getElementById('ai-setup')!.style.display = '';
     document.getElementById('ai-chat')!.style.display = 'none';
   });
+
+  document.getElementById('ai-new-chat')?.addEventListener('click', () => startNewChat());
+  document.getElementById('ai-history-btn')?.addEventListener('click', () => toggleHistoryPanel());
 }
 
 function showAIChat() {
@@ -1006,12 +1157,28 @@ async function sendAIMessage() {
   if (!text) return;
   inputEl.value = '';
 
+  await requestToolsListAsync();
   const toolsSummary = tools.map((t) => `- ${t.name}: ${t.description}`).join('\n');
+  const systemContent = `You are the AI assistant for WebMCP DevTools, a Chrome extension for inspecting and testing WebMCP tools on web pages. Always respond in the same language as the user.
+
+Your capabilities:
+1. See all WebMCP tools currently registered on the active page
+2. Execute any tool by calling it with the function calling feature
+3. Explain tool schemas, parameters, and usage
+4. Help debug tool execution results
+
+Current page tools (${tools.length} total):
+${toolsSummary || '(No tools detected on this page)'}
+
+Rules:
+- When asked to use/call/execute a tool, use function calling immediately
+- Report execution results clearly and format output for readability
+- If no tools are detected, suggest the user navigate to a page with WebMCP tools or check if the WebMCP flag is enabled
+- When listing tools, include their descriptions and parameter info`;
   if (aiMessages.length === 0) {
-    aiMessages.push({
-      role: 'system',
-      content: `You are a helpful assistant for WebMCP DevTools. You can see and call WebMCP tools registered on the current page.\n\nAvailable tools:\n${toolsSummary || 'No tools detected.'}\n\nWhen the user asks you to use a tool, call it using the function calling feature. Report results clearly.`,
-    });
+    aiMessages.push({ role: 'system', content: systemContent });
+  } else if (aiMessages[0]?.role === 'system') {
+    aiMessages[0].content = systemContent;
   }
 
   aiMessages.push({ role: 'user', content: text });
@@ -1036,7 +1203,10 @@ async function sendAIMessage() {
       aiMessages.push({ role: 'assistant', content: response.content });
     }
 
-    while (response.toolCalls && response.toolCalls.length > 0) {
+    let toolRounds = 0;
+    const MAX_TOOL_ROUNDS = 50;
+    while (response.toolCalls && response.toolCalls.length > 0 && toolRounds < MAX_TOOL_ROUNDS) {
+      toolRounds++;
       for (const tc of response.toolCalls) {
         const callId = tc.id;
         aiMessages.push({
@@ -1062,6 +1232,10 @@ async function sendAIMessage() {
         aiMessages.push({ role: 'assistant', content: response.content });
       }
     }
+    if (toolRounds >= MAX_TOOL_ROUNDS && response.toolCalls?.length) {
+      finalizeStream();
+      aiMessages.push({ role: 'assistant', content: t('ai.tool_limit') });
+    }
   } catch (err: any) {
     finalizeStream();
     aiMessages.push({ role: 'assistant', content: `Error: ${err.message}` });
@@ -1070,6 +1244,7 @@ async function sendAIMessage() {
   aiProcessing = false;
   removeThinkingIndicator();
   renderAIMessages();
+  saveCurrentSession();
 }
 
 async function executeToolForAI(name: string, args: any): Promise<any> {

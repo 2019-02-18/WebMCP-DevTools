@@ -11,6 +11,7 @@
     <header class="header">
       <h1 class="header__title" data-i18n="header.title">WebMCP DevTools</h1>
       <div class="header__actions">
+        <button id="tools-refresh" class="btn btn--sm btn--icon" title="Refresh tools">↻</button>
         <button id="theme-toggle" class="theme-toggle" title="Toggle Theme"></button>
         <button id="lang-toggle" class="lang-toggle" title="Switch Language">
           <span data-i18n="lang.current">EN</span>
@@ -115,11 +116,19 @@
             </div>
           </div>
           <div id="ai-chat" class="ai-chat" style="display:none;">
+            <div class="ai-chat__toolbar">
+              <button id="ai-new-chat" class="btn btn--sm" title="New Chat" data-i18n="ai.new_conversation">New</button>
+              <button id="ai-history-btn" class="btn btn--sm" title="Chat History">☰</button>
+              <span class="ai-chat__toolbar-spacer"></span>
+              <button id="ai-settings-btn" class="btn btn--sm">⚙</button>
+            </div>
+            <div id="ai-history-panel" class="ai-history" style="display:none;">
+              <div id="ai-history-list" class="ai-history__list"></div>
+            </div>
             <div id="ai-messages" class="ai-chat__messages"></div>
             <div class="ai-chat__input-area">
               <textarea id="ai-input" class="ai-chat__input" rows="2" data-i18n-placeholder="ai.placeholder" placeholder="Ask AI about the tools..."></textarea>
               <button id="ai-send" class="btn btn--primary btn--sm" data-i18n="ai.send">Send</button>
-              <button id="ai-settings-btn" class="btn btn--sm">⚙</button>
             </div>
           </div>
         </div>
