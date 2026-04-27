@@ -444,6 +444,74 @@
         logMsg('listTools() error: ' + e);
       }
     });
+
+    // Simulate API calls for generator discovery
+    setTimeout(() => {
+      fetch('/api/v1/users?page=1&limit=10').catch(() => {});
+      fetch('/api/v1/products/search', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: '{"q":"test"}' }).catch(() => {});
+    }, 2000);
   </script>
+
+  <hr style="margin: 40px 0; border: none; border-top: 2px solid #e2e8f0;" />
+
+  <h2 style="margin-bottom: 12px; color: #8b5cf6;">🔧 Generator Test Area</h2>
+  <p class="subtitle">These elements are NOT registered as WebMCP tools. Use the Generator tab to scan and inject them.</p>
+
+  <div class="card">
+    <h3>Search Products</h3>
+    <p>A plain search form (no toolname attribute) — the Generator should discover this.</p>
+    <form id="search-form" action="/search">
+      <div style="display:flex; flex-direction:column; gap:8px; margin-top:8px;">
+        <input name="query" type="text" required placeholder="Search products..." style="padding:6px 10px; border:1px solid #e2e8f0; border-radius:4px;" />
+        <select name="category" style="padding:6px 10px; border:1px solid #e2e8f0; border-radius:4px;">
+          <option value="">All Categories</option>
+          <option value="electronics">Electronics</option>
+          <option value="clothing">Clothing</option>
+          <option value="books">Books</option>
+        </select>
+        <div style="display:flex; gap:8px;">
+          <input name="min_price" type="number" min="0" placeholder="Min price" style="padding:6px 10px; border:1px solid #e2e8f0; border-radius:4px; flex:1;" />
+          <input name="max_price" type="number" min="0" placeholder="Max price" style="padding:6px 10px; border:1px solid #e2e8f0; border-radius:4px; flex:1;" />
+        </div>
+        <label style="display:flex; align-items:center; gap:6px; font-size:13px;">
+          <input name="in_stock" type="checkbox" /> In stock only
+        </label>
+        <button type="submit" class="primary" style="align-self:flex-start;">Search</button>
+      </div>
+    </form>
+  </div>
+
+  <div class="card">
+    <h3>User Settings</h3>
+    <p>A settings form with various input types — the Generator should infer a rich schema.</p>
+    <form name="user_settings">
+      <div style="display:flex; flex-direction:column; gap:8px; margin-top:8px;">
+        <input name="display_name" type="text" required placeholder="Display Name" style="padding:6px 10px; border:1px solid #e2e8f0; border-radius:4px;" />
+        <input name="email" type="email" required placeholder="Email" style="padding:6px 10px; border:1px solid #e2e8f0; border-radius:4px;" />
+        <input name="website" type="url" placeholder="Website URL" style="padding:6px 10px; border:1px solid #e2e8f0; border-radius:4px;" />
+        <input name="birthday" type="date" style="padding:6px 10px; border:1px solid #e2e8f0; border-radius:4px;" />
+        <textarea name="bio" placeholder="Short bio..." rows="2" style="padding:6px 10px; border:1px solid #e2e8f0; border-radius:4px;"></textarea>
+        <select name="theme" style="padding:6px 10px; border:1px solid #e2e8f0; border-radius:4px;">
+          <option value="light">Light</option>
+          <option value="dark">Dark</option>
+          <option value="auto">Auto</option>
+        </select>
+        <label style="display:flex; align-items:center; gap:6px; font-size:13px;">
+          <input name="notifications" type="checkbox" /> Enable notifications
+        </label>
+        <button type="submit" class="primary" style="align-self:flex-start;">Save Settings</button>
+      </div>
+    </form>
+  </div>
+
+  <div class="card">
+    <h3>Standalone Buttons</h3>
+    <p>Buttons outside of forms — the Generator should discover them as click-action tools.</p>
+    <div style="display:flex; gap:8px; margin-top:8px; flex-wrap:wrap;">
+      <button class="primary" onclick="alert('Data exported!')">Export Data</button>
+      <button style="padding:6px 14px; border:1px solid #e2e8f0; border-radius:4px; cursor:pointer; background:#fff;" onclick="alert('Cache cleared!')">Clear Cache</button>
+      <button style="padding:6px 14px; border:1px solid #dc2626; border-radius:4px; cursor:pointer; background:#fee2e2; color:#dc2626;" onclick="alert('All data reset!')">Reset All</button>
+    </div>
+  </div>
 </body>
 </html>

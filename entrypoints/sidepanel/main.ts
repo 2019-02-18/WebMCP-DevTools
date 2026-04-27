@@ -49,15 +49,112 @@ let viewMode: 'current' | 'all' = 'current';
 let allTabTools: TabToolGroup[] = [];
 
 // ===== Tab Bar =====
+interface TabDef {
+  id: string;
+  i18nKey: string;
+  iconName: keyof typeof import('../../lib/icons').icons;
+  primary?: boolean;
+}
+
+const TAB_DEFS: TabDef[] = [
+  { id: 'tools', i18nKey: 'tab.tools', iconName: 'wrench', primary: true },
+  { id: 'execute', i18nKey: 'tab.execute', iconName: 'play', primary: true },
+  { id: 'generator', i18nKey: 'tab.generator', iconName: 'wand', primary: true },
+  { id: 'ai', i18nKey: 'tab.ai', iconName: 'sparkles', primary: true },
+  { id: 'timeline', i18nKey: 'tab.timeline', iconName: 'activity' },
+  { id: 'history', i18nKey: 'history.title', iconName: 'history' },
+  { id: 'snapshots', i18nKey: 'tab.snapshots', iconName: 'camera' },
+];
+
 function initTabBar() {
-  const tabs = document.querySelectorAll<HTMLButtonElement>('.tab-bar__tab');
-  tabs.forEach((tab) => {
-    tab.addEventListener('click', () => {
-      tabs.forEach((tb) => tb.classList.remove('tab-bar__tab--active'));
-      tab.classList.add('tab-bar__tab--active');
-      document.querySelectorAll('.panel').forEach((p) => p.classList.remove('panel--active'));
-      document.getElementById(`panel-${tab.dataset.tab}`)?.classList.add('panel--active');
+  const container = document.getElementById('tab-bar')!;
+  container.innerHTML = '';
+
+  const primaryTabs = TAB_DEFS.filter((d) => d.primary);
+  const overflowTabs = TAB_DEFS.filter((d) => !d.primary);
+
+  primaryTabs.forEach((def, idx) => {
+    const btn = document.createElement('button');
+    btn.className = `tab-bar__tab${idx === 0 ? ' tab-bar__tab--active' : ''}`;
+    btn.dataset.tab = def.id;
+    btn.title = t(def.i18nKey);
+    btn.innerHTML = `${icon(def.iconName, 15, 'tab-icon')}<span class="tab-label">${t(def.i18nKey)}</span>`;
+    container.appendChild(btn);
+  });
+
+  if (overflowTabs.length > 0) {
+    const moreWrapper = document.createElement('div');
+    moreWrapper.className = 'tab-bar__more';
+    const moreBtn = document.createElement('button');
+    moreBtn.className = 'tab-bar__tab tab-bar__more-btn';
+    moreBtn.title = '…';
+    moreBtn.innerHTML = `<span class="tab-more-dots">⋯</span>`;
+    moreWrapper.appendChild(moreBtn);
+
+    const dropdown = document.createElement('div');
+    dropdown.className = 'tab-bar__dropdown';
+    dropdown.style.display = 'none';
+
+    overflowTabs.forEach((def) => {
+      const item = document.createElement('button');
+      item.className = 'tab-bar__dropdown-item';
+      item.dataset.tab = def.id;
+      item.innerHTML = `${icon(def.iconName, 14, 'tab-icon')}<span>${t(def.i18nKey)}</span>`;
+      item.addEventListener('click', () => {
+        activateTab(def.id);
+        dropdown.style.display = 'none';
+      });
+      dropdown.appendChild(item);
     });
+
+    moreBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      dropdown.style.display = dropdown.style.display === 'none' ? 'flex' : 'none';
+    });
+
+    document.addEventListener('click', () => { dropdown.style.display = 'none'; });
+    moreWrapper.appendChild(dropdown);
+    container.appendChild(moreWrapper);
+  }
+
+  container.querySelectorAll<HTMLButtonElement>('.tab-bar__tab:not(.tab-bar__more-btn)').forEach((tab) => {
+    tab.addEventListener('click', () => activateTab(tab.dataset.tab!));
+  });
+}
+
+function activateTab(tabId: string) {
+  const container = document.getElementById('tab-bar')!;
+  container.querySelectorAll('.tab-bar__tab').forEach((tb) => tb.classList.remove('tab-bar__tab--active'));
+  container.querySelectorAll('.tab-bar__dropdown-item').forEach((di) => di.classList.remove('tab-bar__dropdown-item--active'));
+
+  const primaryBtn = container.querySelector<HTMLButtonElement>(`.tab-bar__tab[data-tab="${tabId}"]`);
+  if (primaryBtn) {
+    primaryBtn.classList.add('tab-bar__tab--active');
+  } else {
+    const dropdownItem = container.querySelector<HTMLButtonElement>(`.tab-bar__dropdown-item[data-tab="${tabId}"]`);
+    if (dropdownItem) dropdownItem.classList.add('tab-bar__dropdown-item--active');
+    const moreBtn = container.querySelector('.tab-bar__more-btn');
+    if (moreBtn) moreBtn.classList.add('tab-bar__tab--active');
+  }
+
+  document.querySelectorAll('.panel').forEach((p) => p.classList.remove('panel--active'));
+  document.getElementById(`panel-${tabId}`)?.classList.add('panel--active');
+}
+
+function refreshTabLabels() {
+  const container = document.getElementById('tab-bar')!;
+  TAB_DEFS.forEach((def) => {
+    const btn = container.querySelector<HTMLButtonElement>(`.tab-bar__tab[data-tab="${def.id}"]`);
+    if (btn) {
+      btn.title = t(def.i18nKey);
+      const label = btn.querySelector('.tab-label');
+      if (label) label.textContent = t(def.i18nKey);
+    }
+    const dropdownItem = container.querySelector<HTMLButtonElement>(`.tab-bar__dropdown-item[data-tab="${def.id}"]`);
+    if (dropdownItem) {
+      const span = dropdownItem.querySelector('span:not(.tab-icon):not([class])');
+      if (span) span.textContent = t(def.i18nKey);
+    }
   });
 }
 
@@ -99,11 +196,13 @@ function updateThemeIcon(btn: HTMLElement) {
 }
 
 function reRenderAll() {
+  refreshTabLabels();
   renderToolsList();
   renderTimeline();
   updateStatusBar();
   renderSnapshotsPanel();
   renderHistoryPanel();
+  renderGeneratorList();
   const themeBtn = document.getElementById('theme-toggle');
   if (themeBtn) updateThemeIcon(themeBtn);
   if (selectedTool) renderExecutePanel(selectedTool);
@@ -908,8 +1007,509 @@ async function init() {
 
   initBridge();
   initAIPanel();
+  initGenerator();
   requestToolsList();
   renderSnapshotsPanel();
+}
+
+// ===== Generator Panel =====
+interface DiscoveredElement {
+  id: string;
+  type: 'form' | 'button' | 'link' | 'api';
+  selector: string;
+  suggestedName: string;
+  suggestedDescription: string;
+  inferredSchema?: Record<string, unknown>;
+  metadata: Record<string, unknown>;
+  alreadyRegistered: boolean;
+}
+
+let discoveredElements: DiscoveredElement[] = [];
+let generatorEdits: Map<string, { name: string; description: string }> = new Map();
+
+function initGenerator() {
+  document.getElementById('generator-scan')?.addEventListener('click', scanPage);
+  document.getElementById('generator-inject-all')?.addEventListener('click', injectAllTools);
+  document.getElementById('generator-save-profile')?.addEventListener('click', saveCurrentAsProfile);
+  document.getElementById('profiles-import')?.addEventListener('click', importProfileFromFile);
+
+  document.querySelectorAll<HTMLButtonElement>('.gen-tab').forEach((tab) => {
+    tab.addEventListener('click', () => {
+      document.querySelectorAll('.gen-tab').forEach((t) => t.classList.remove('gen-tab--active'));
+      tab.classList.add('gen-tab--active');
+      const target = tab.dataset.genTab;
+      const scanPanel = document.getElementById('gen-scan-panel')!;
+      const profilesPanel = document.getElementById('gen-profiles-panel')!;
+      if (target === 'profiles') {
+        scanPanel.style.display = 'none';
+        profilesPanel.style.display = '';
+        renderProfilesList();
+      } else {
+        scanPanel.style.display = '';
+        profilesPanel.style.display = 'none';
+      }
+    });
+  });
+}
+
+async function scanPage() {
+  const scanBtn = document.getElementById('generator-scan') as HTMLButtonElement;
+  if (scanBtn) {
+    scanBtn.disabled = true;
+    scanBtn.textContent = t('generator.scanning');
+  }
+
+  try {
+    const wid = await getMyWindowId();
+    const response = await chrome.runtime.sendMessage({ action: 'SCAN_PAGE', windowId: wid });
+    discoveredElements = response?.elements ?? [];
+    generatorEdits.clear();
+    renderGeneratorList();
+    if (discoveredElements.length > 0) {
+      showToast(t('generator.found', { count: discoveredElements.length }));
+    }
+  } catch {
+    discoveredElements = [];
+    renderGeneratorList();
+  } finally {
+    if (scanBtn) {
+      scanBtn.disabled = false;
+      scanBtn.textContent = t('generator.scan');
+    }
+  }
+}
+
+function renderGeneratorList() {
+  const container = document.getElementById('generator-list')!;
+  const injectAllBtn = document.getElementById('generator-inject-all') as HTMLButtonElement;
+  const countEl = document.getElementById('generator-count')!;
+
+  if (discoveredElements.length === 0) {
+    container.innerHTML = `
+      <div class="empty-state">
+        <div class="empty-state__icon">🔍</div>
+        <p class="empty-state__text">${t('generator.empty_title')}</p>
+        <p class="empty-state__hint">${t('generator.empty_hint')}</p>
+      </div>
+    `;
+    if (injectAllBtn) injectAllBtn.style.display = 'none';
+    countEl.textContent = '';
+    return;
+  }
+
+  const injectableCount = discoveredElements.filter((e) => !e.alreadyRegistered).length;
+  if (injectAllBtn) injectAllBtn.style.display = injectableCount > 0 ? '' : 'none';
+  countEl.textContent = t('generator.found', { count: discoveredElements.length });
+
+  container.innerHTML = '';
+  discoveredElements.forEach((el) => {
+    const card = createGenCard(el);
+    container.appendChild(card);
+  });
+  updateSaveProfileVisibility();
+}
+
+function createGenCard(el: DiscoveredElement): HTMLElement {
+  const card = document.createElement('div');
+  card.className = `gen-card${el.alreadyRegistered ? ' gen-card--registered' : ''}`;
+  card.dataset.elementId = el.id;
+
+  const edits = generatorEdits.get(el.id);
+  const name = edits?.name ?? el.suggestedName;
+  const desc = edits?.description ?? el.suggestedDescription;
+
+  const typeLabel: Record<string, string> = {
+    form: t('generator.form'),
+    button: t('generator.button'),
+    link: t('generator.link'),
+    api: t('generator.api'),
+  };
+
+  // Header
+  const header = document.createElement('div');
+  header.className = 'gen-card__header';
+
+  const typeBadge = document.createElement('span');
+  typeBadge.className = `gen-card__type gen-card__type--${el.type}`;
+  typeBadge.textContent = typeLabel[el.type] || el.type;
+  header.appendChild(typeBadge);
+
+  const nameContainer = document.createElement('div');
+  nameContainer.className = 'gen-card__name';
+  const nameInput = document.createElement('input');
+  nameInput.type = 'text';
+  nameInput.value = name;
+  nameInput.addEventListener('input', () => {
+    const current = generatorEdits.get(el.id) ?? { name: el.suggestedName, description: el.suggestedDescription };
+    generatorEdits.set(el.id, { ...current, name: nameInput.value });
+  });
+  nameContainer.appendChild(nameInput);
+  header.appendChild(nameContainer);
+
+  if (el.alreadyRegistered) {
+    const regBadge = document.createElement('span');
+    regBadge.className = 'gen-card__tag';
+    regBadge.textContent = t('generator.already_registered');
+    header.appendChild(regBadge);
+  }
+
+  card.appendChild(header);
+
+  // Description (editable)
+  const descDiv = document.createElement('div');
+  descDiv.className = 'gen-card__desc';
+  const descInput = document.createElement('input');
+  descInput.type = 'text';
+  descInput.value = desc;
+  descInput.addEventListener('input', () => {
+    const current = generatorEdits.get(el.id) ?? { name: el.suggestedName, description: el.suggestedDescription };
+    generatorEdits.set(el.id, { ...current, description: descInput.value });
+  });
+  descDiv.appendChild(descInput);
+  card.appendChild(descDiv);
+
+  // Metadata tags
+  const metaDiv = document.createElement('div');
+  metaDiv.className = 'gen-card__meta';
+
+  if (el.selector) {
+    const selTag = document.createElement('span');
+    selTag.className = 'gen-card__tag';
+    selTag.textContent = el.selector.length > 30 ? el.selector.substring(0, 30) + '…' : el.selector;
+    selTag.title = el.selector;
+    metaDiv.appendChild(selTag);
+  }
+
+  if (el.type === 'form' && el.metadata.fieldCount) {
+    const fieldTag = document.createElement('span');
+    fieldTag.className = 'gen-card__tag';
+    fieldTag.textContent = t('generator.fields', { count: el.metadata.fieldCount as number });
+    metaDiv.appendChild(fieldTag);
+  }
+
+  if (el.type === 'api' && el.metadata.method) {
+    const methodTag = document.createElement('span');
+    methodTag.className = 'gen-card__tag';
+    methodTag.textContent = `${el.metadata.method} ${(el.metadata.pathname as string) || ''}`;
+    metaDiv.appendChild(methodTag);
+  }
+
+  if (el.type === 'form' && el.metadata.method) {
+    const methodTag = document.createElement('span');
+    methodTag.className = 'gen-card__tag';
+    methodTag.textContent = el.metadata.method as string;
+    metaDiv.appendChild(methodTag);
+  }
+
+  card.appendChild(metaDiv);
+
+  // Schema preview (collapsible)
+  if (el.inferredSchema && el.type === 'form') {
+    const schemaDiv = document.createElement('div');
+    schemaDiv.className = 'gen-card__schema';
+    try {
+      const schemaStr = typeof el.inferredSchema === 'string' ? el.inferredSchema : JSON.stringify(el.inferredSchema);
+      const tree = renderSchemaTree(schemaStr);
+      schemaDiv.appendChild(tree);
+    } catch {}
+    card.appendChild(schemaDiv);
+  }
+
+  // Actions
+  if (!el.alreadyRegistered) {
+    const actionsDiv = document.createElement('div');
+    actionsDiv.className = 'gen-card__actions';
+
+    const injectBtn = document.createElement('button');
+    injectBtn.className = 'btn btn--primary btn--sm';
+    injectBtn.textContent = t('generator.inject');
+    injectBtn.addEventListener('click', () => injectSingleTool(el, injectBtn));
+    actionsDiv.appendChild(injectBtn);
+
+    card.appendChild(actionsDiv);
+  }
+
+  return card;
+}
+
+async function injectSingleTool(el: DiscoveredElement, btn: HTMLButtonElement) {
+  const edits = generatorEdits.get(el.id);
+  const name = edits?.name ?? el.suggestedName;
+  const desc = edits?.description ?? el.suggestedDescription;
+
+  btn.disabled = true;
+  btn.textContent = '...';
+
+  const executeTypeMap: Record<string, string> = {
+    form: 'form-submit',
+    button: 'click',
+    link: 'navigate',
+    api: 'fetch',
+  };
+
+  const toolDef = {
+    name,
+    description: desc,
+    inputSchema: el.inferredSchema ?? { type: 'object', properties: {} },
+    executeType: executeTypeMap[el.type] || 'custom',
+    executeConfig: {
+      selector: el.selector,
+      ...(el.type === 'api' ? { url: el.metadata.url, method: el.metadata.method } : {}),
+    },
+  };
+
+  try {
+    const wid = await getMyWindowId();
+    const response = await chrome.runtime.sendMessage({
+      action: 'INJECT_TOOL',
+      payload: toolDef,
+      windowId: wid,
+    });
+
+    if (response?.success) {
+      el.alreadyRegistered = true;
+      renderGeneratorList();
+      showToast(t('generator.injected', { name }));
+      requestToolsList();
+    } else {
+      showToast(t('generator.inject_failed', { error: response?.error || 'Unknown error' }));
+      btn.disabled = false;
+      btn.textContent = t('generator.inject');
+    }
+  } catch (e: any) {
+    showToast(t('generator.inject_failed', { error: e?.message || 'Unknown error' }));
+    btn.disabled = false;
+    btn.textContent = t('generator.inject');
+  }
+}
+
+async function injectAllTools() {
+  const injectables = discoveredElements.filter((e) => !e.alreadyRegistered);
+  for (const el of injectables) {
+    const edits = generatorEdits.get(el.id);
+    const name = edits?.name ?? el.suggestedName;
+    const desc = edits?.description ?? el.suggestedDescription;
+
+    const executeTypeMap: Record<string, string> = {
+      form: 'form-submit',
+      button: 'click',
+      link: 'navigate',
+      api: 'fetch',
+    };
+
+    const toolDef = {
+      name,
+      description: desc,
+      inputSchema: el.inferredSchema ?? { type: 'object', properties: {} },
+      executeType: executeTypeMap[el.type] || 'custom',
+      executeConfig: {
+        selector: el.selector,
+        ...(el.type === 'api' ? { url: el.metadata.url, method: el.metadata.method } : {}),
+      },
+    };
+
+    try {
+      const wid = await getMyWindowId();
+      const response = await chrome.runtime.sendMessage({
+        action: 'INJECT_TOOL',
+        payload: toolDef,
+        windowId: wid,
+      });
+      if (response?.success) {
+        el.alreadyRegistered = true;
+      }
+    } catch {}
+  }
+
+  renderGeneratorList();
+  requestToolsList();
+  const injectedCount = injectables.filter((e) => e.alreadyRegistered).length;
+  showToast(t('generator.found', { count: injectedCount }) + ' injected');
+}
+
+// ===== Site Profiles UI =====
+
+function updateSaveProfileVisibility() {
+  const btn = document.getElementById('generator-save-profile') as HTMLButtonElement;
+  if (!btn) return;
+  const injected = discoveredElements.filter((e) => e.alreadyRegistered);
+  btn.style.display = injected.length > 0 ? '' : 'none';
+}
+
+async function saveCurrentAsProfile() {
+  const injected = discoveredElements.filter((e) => e.alreadyRegistered);
+  if (injected.length === 0) return;
+
+  let domain = '';
+  try {
+    const tab = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
+    if (tab[0]?.url) domain = new URL(tab[0].url).hostname;
+  } catch {}
+
+  const executeTypeMap: Record<string, string> = {
+    form: 'form-submit', button: 'click', link: 'navigate', api: 'fetch',
+  };
+
+  const tools = injected.map((el) => {
+    const edits = generatorEdits.get(el.id);
+    return {
+      name: edits?.name ?? el.suggestedName,
+      description: edits?.description ?? el.suggestedDescription,
+      inputSchema: el.inferredSchema ?? { type: 'object', properties: {} },
+      executeType: executeTypeMap[el.type] || 'custom',
+      executeConfig: {
+        selector: el.selector,
+        ...(el.type === 'api' ? { url: el.metadata.url, method: el.metadata.method } : {}),
+      },
+    };
+  });
+
+  const profileName = prompt(t('generator.profile_name'), domain) || domain || 'Unnamed';
+
+  const profile = {
+    id: crypto.randomUUID(),
+    domain,
+    name: profileName,
+    tools,
+    createdAt: Date.now(),
+    updatedAt: Date.now(),
+    autoInject: true,
+  };
+
+  try {
+    await chrome.runtime.sendMessage({ action: 'SAVE_PROFILE', payload: profile });
+    showToast(t('generator.profile_saved'));
+  } catch (e: any) {
+    showToast(e?.message || 'Save failed');
+  }
+}
+
+async function renderProfilesList() {
+  const container = document.getElementById('profiles-list')!;
+  try {
+    const response = await chrome.runtime.sendMessage({ action: 'LIST_PROFILES' });
+    const profiles = response?.profiles || [];
+
+    if (profiles.length === 0) {
+      container.innerHTML = `
+        <div class="empty-state">
+          <div class="empty-state__icon">📁</div>
+          <p class="empty-state__text">${t('generator.no_profiles')}</p>
+          <p class="empty-state__hint">${t('generator.no_profiles_hint')}</p>
+        </div>
+      `;
+      return;
+    }
+
+    container.innerHTML = '';
+    for (const profile of profiles) {
+      const card = document.createElement('div');
+      card.className = 'profile-card';
+
+      const header = document.createElement('div');
+      header.className = 'profile-card__header';
+
+      const nameEl = document.createElement('strong');
+      nameEl.className = 'profile-card__name';
+      nameEl.textContent = profile.name;
+      header.appendChild(nameEl);
+
+      const domainEl = document.createElement('span');
+      domainEl.className = 'profile-card__domain';
+      domainEl.textContent = profile.domain;
+      header.appendChild(domainEl);
+
+      card.appendChild(header);
+
+      const info = document.createElement('div');
+      info.className = 'profile-card__info';
+      info.textContent = t('generator.tools_count', { count: profile.tools.length });
+      card.appendChild(info);
+
+      const actions = document.createElement('div');
+      actions.className = 'profile-card__actions';
+
+      const autoLabel = document.createElement('label');
+      autoLabel.className = 'profile-card__toggle';
+      const autoCheck = document.createElement('input');
+      autoCheck.type = 'checkbox';
+      autoCheck.checked = profile.autoInject;
+      autoCheck.addEventListener('change', async () => {
+        await chrome.runtime.sendMessage({
+          action: 'TOGGLE_PROFILE_AUTO_INJECT',
+          payload: { id: profile.id, enabled: autoCheck.checked },
+        });
+      });
+      autoLabel.appendChild(autoCheck);
+      autoLabel.append(` ${t('generator.auto_inject')}`);
+      actions.appendChild(autoLabel);
+
+      const exportBtn = document.createElement('button');
+      exportBtn.className = 'btn btn--sm';
+      exportBtn.textContent = t('generator.export_profile');
+      exportBtn.addEventListener('click', () => {
+        const json = JSON.stringify(profile, null, 2);
+        const blob = new Blob([json], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `webmcp-profile-${profile.domain}.json`;
+        a.click();
+        URL.revokeObjectURL(url);
+      });
+      actions.appendChild(exportBtn);
+
+      const delBtn = document.createElement('button');
+      delBtn.className = 'btn btn--sm btn--danger';
+      delBtn.textContent = t('snapshots.delete');
+      delBtn.addEventListener('click', async () => {
+        if (!confirm(t('generator.confirm_delete_profile'))) return;
+        await chrome.runtime.sendMessage({ action: 'DELETE_PROFILE', payload: { id: profile.id } });
+        showToast(t('generator.profile_deleted'));
+        renderProfilesList();
+      });
+      actions.appendChild(delBtn);
+
+      card.appendChild(actions);
+      container.appendChild(card);
+    }
+  } catch {
+    container.innerHTML = '<p>Error loading profiles</p>';
+  }
+}
+
+function importProfileFromFile() {
+  const input = document.createElement('input');
+  input.type = 'file';
+  input.accept = '.json';
+  input.addEventListener('change', async () => {
+    const file = input.files?.[0];
+    if (!file) return;
+    try {
+      const text = await file.text();
+      const data = JSON.parse(text);
+      if (!data.domain || !data.name || !Array.isArray(data.tools)) {
+        showToast(t('generator.import_error'));
+        return;
+      }
+      const profile = {
+        id: crypto.randomUUID(),
+        domain: data.domain,
+        urlPattern: data.urlPattern,
+        name: data.name,
+        tools: data.tools,
+        createdAt: Date.now(),
+        updatedAt: Date.now(),
+        autoInject: data.autoInject ?? true,
+      };
+      await chrome.runtime.sendMessage({ action: 'SAVE_PROFILE', payload: profile });
+      showToast(t('generator.profile_imported'));
+      renderProfilesList();
+    } catch {
+      showToast(t('generator.import_error'));
+    }
+  });
+  input.click();
 }
 
 // ===== Bridge UI =====

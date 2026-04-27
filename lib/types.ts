@@ -71,3 +71,37 @@ export interface Settings {
   locale: Locale;
   exportFormat: 'json' | 'markdown' | 'postman';
 }
+
+// Generator types
+export type DiscoveredElementType = 'form' | 'button' | 'link' | 'api';
+
+export interface DiscoveredElement {
+  id: string;
+  type: DiscoveredElementType;
+  selector: string;
+  suggestedName: string;
+  suggestedDescription: string;
+  inferredSchema?: Record<string, unknown>;
+  metadata: Record<string, unknown>;
+  alreadyRegistered: boolean;
+}
+
+export interface GeneratedToolDef {
+  name: string;
+  description: string;
+  inputSchema: Record<string, unknown>;
+  executeType: 'form-submit' | 'click' | 'navigate' | 'fetch' | 'custom';
+  executeConfig: Record<string, unknown>;
+}
+
+// Site Profiles
+export interface SiteProfile {
+  id: string;
+  domain: string;
+  urlPattern?: string;
+  name: string;
+  tools: GeneratedToolDef[];
+  createdAt: number;
+  updatedAt: number;
+  autoInject: boolean;
+}

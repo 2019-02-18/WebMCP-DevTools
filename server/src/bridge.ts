@@ -172,6 +172,132 @@ export class ExtensionBridge extends EventEmitter {
     });
   }
 
+  async scanPage(tabId?: number): Promise<any> {
+    if (!this.isConnected()) {
+      throw new Error('Extension not connected');
+    }
+
+    const id = String(++this.requestId);
+    return new Promise((resolve, reject) => {
+      const timeout = setTimeout(() => {
+        this.pendingRequests.delete(id);
+        reject(new Error('Page scan timed out'));
+      }, 15000);
+
+      this.pendingRequests.set(id, {
+        resolve: (v) => { clearTimeout(timeout); resolve(v); },
+        reject: (e) => { clearTimeout(timeout); reject(e); },
+      });
+
+      this.sendToExtension({ action: 'SCAN_PAGE', id, tabId });
+    });
+  }
+
+  async createTool(toolDef: Record<string, unknown>, tabId?: number): Promise<any> {
+    if (!this.isConnected()) {
+      throw new Error('Extension not connected');
+    }
+
+    const id = String(++this.requestId);
+    return new Promise((resolve, reject) => {
+      const timeout = setTimeout(() => {
+        this.pendingRequests.delete(id);
+        reject(new Error('Tool creation timed out'));
+      }, 15000);
+
+      this.pendingRequests.set(id, {
+        resolve: (v) => { clearTimeout(timeout); resolve(v); },
+        reject: (e) => { clearTimeout(timeout); reject(e); },
+      });
+
+      this.sendToExtension({ action: 'CREATE_TOOL', id, toolDef, tabId });
+    });
+  }
+
+  async readResource(contentType: string, tabId?: number): Promise<any> {
+    if (!this.isConnected()) {
+      throw new Error('Extension not connected');
+    }
+
+    const id = String(++this.requestId);
+    return new Promise((resolve, reject) => {
+      const timeout = setTimeout(() => {
+        this.pendingRequests.delete(id);
+        reject(new Error('Resource read timed out'));
+      }, 15000);
+
+      this.pendingRequests.set(id, {
+        resolve: (v) => { clearTimeout(timeout); resolve(v); },
+        reject: (e) => { clearTimeout(timeout); reject(e); },
+      });
+
+      this.sendToExtension({ action: 'READ_RESOURCE', id, contentType, tabId });
+    });
+  }
+
+  async saveProfile(profile: Record<string, unknown>): Promise<any> {
+    if (!this.isConnected()) {
+      throw new Error('Extension not connected');
+    }
+
+    const id = String(++this.requestId);
+    return new Promise((resolve, reject) => {
+      const timeout = setTimeout(() => {
+        this.pendingRequests.delete(id);
+        reject(new Error('Save profile timed out'));
+      }, 10000);
+
+      this.pendingRequests.set(id, {
+        resolve: (v) => { clearTimeout(timeout); resolve(v); },
+        reject: (e) => { clearTimeout(timeout); reject(e); },
+      });
+
+      this.sendToExtension({ action: 'SAVE_PROFILE', id, profile });
+    });
+  }
+
+  async listProfiles(): Promise<any> {
+    if (!this.isConnected()) {
+      throw new Error('Extension not connected');
+    }
+
+    const id = String(++this.requestId);
+    return new Promise((resolve, reject) => {
+      const timeout = setTimeout(() => {
+        this.pendingRequests.delete(id);
+        reject(new Error('List profiles timed out'));
+      }, 10000);
+
+      this.pendingRequests.set(id, {
+        resolve: (v) => { clearTimeout(timeout); resolve(v); },
+        reject: (e) => { clearTimeout(timeout); reject(e); },
+      });
+
+      this.sendToExtension({ action: 'LIST_PROFILES', id });
+    });
+  }
+
+  async batchInject(toolDefs: Record<string, unknown>[], tabId?: number): Promise<any> {
+    if (!this.isConnected()) {
+      throw new Error('Extension not connected');
+    }
+
+    const id = String(++this.requestId);
+    return new Promise((resolve, reject) => {
+      const timeout = setTimeout(() => {
+        this.pendingRequests.delete(id);
+        reject(new Error('Batch injection timed out'));
+      }, 30000);
+
+      this.pendingRequests.set(id, {
+        resolve: (v) => { clearTimeout(timeout); resolve(v); },
+        reject: (e) => { clearTimeout(timeout); reject(e); },
+      });
+
+      this.sendToExtension({ action: 'BATCH_INJECT', id, toolDefs, tabId });
+    });
+  }
+
   stop() {
     this.stopHeartbeat();
     this.pendingRequests.forEach(({ reject }) => reject(new Error('Server stopped')));

@@ -8,7 +8,63 @@ export default defineBackground(() => {
     tools: any[];
   }
 
+  interface SiteProfile {
+    id: string;
+    domain: string;
+    urlPattern?: string;
+    name: string;
+    tools: any[];
+    createdAt: number;
+    updatedAt: number;
+    autoInject: boolean;
+  }
+
+  const PROFILES_KEY = 'site_profiles';
   const tabToolsMap = new Map<number, TabToolsEntry>();
+  const autoInjectedTabs = new Set<string>();
+
+  async function loadProfiles(): Promise<SiteProfile[]> {
+    try {
+      const data = await chrome.storage.local.get(PROFILES_KEY);
+      return (data[PROFILES_KEY] as SiteProfile[]) || [];
+    } catch { return []; }
+  }
+
+  function matchProfiles(profiles: SiteProfile[], url: string): SiteProfile[] {
+    try {
+      const parsed = new URL(url);
+      return profiles.filter((p) => {
+        if (!p.autoInject) return false;
+        if (p.urlPattern) {
+          try { return new RegExp(p.urlPattern).test(url); } catch { return false; }
+        }
+        return parsed.hostname === p.domain || parsed.hostname.endsWith(`.${p.domain}`);
+      });
+    } catch { return []; }
+  }
+
+  async function autoInjectForTab(tabId: number, url: string) {
+    const key = `${tabId}:${url}`;
+    if (autoInjectedTabs.has(key)) return;
+
+    const profiles = await loadProfiles();
+    const matches = matchProfiles(profiles, url);
+    if (matches.length === 0) return;
+
+    autoInjectedTabs.add(key);
+
+    const allTools = matches.flatMap((p) => p.tools);
+    if (allTools.length === 0) return;
+
+    try {
+      await ensureContentScriptsInjected(tabId);
+      await new Promise((r) => setTimeout(r, 500));
+      await chrome.tabs.sendMessage(tabId, { action: 'BATCH_INJECT', payload: allTools });
+      console.error(`[AutoInject] Injected ${allTools.length} tools into tab ${tabId} (${url})`);
+    } catch (e: any) {
+      console.error(`[AutoInject] Failed for tab ${tabId}: ${e?.message}`);
+    }
+  }
 
   chrome.tabs.onActivated.addListener(async (activeInfo) => {
     updateBadge(activeInfo.tabId);
@@ -18,6 +74,9 @@ export default defineBackground(() => {
   chrome.tabs.onUpdated.addListener((tabId, changeInfo, tab) => {
     if (changeInfo.status === 'complete' && tab.active) {
       notifyTabChanged(tab.windowId);
+    }
+    if (changeInfo.status === 'complete' && tab.url) {
+      autoInjectForTab(tabId, tab.url);
     }
     if (changeInfo.title || changeInfo.url) {
       const entry = tabToolsMap.get(tabId);
@@ -66,8 +125,112 @@ export default defineBackground(() => {
       return true;
     }
 
+    if (message.action === 'SCAN_PAGE') {
+      forwardToContentScript({ action: 'SCAN_PAGE', windowId: message.windowId }, sendResponse);
+      return true;
+    }
+
+    if (message.action === 'INJECT_TOOL') {
+      const targetTabId = message.targetTabId;
+      if (targetTabId != null) {
+        forwardToTab(targetTabId, { action: 'INJECT_TOOL', payload: message.payload }, sendResponse);
+      } else {
+        forwardToContentScript({ action: 'INJECT_TOOL', payload: message.payload, windowId: message.windowId }, sendResponse);
+      }
+      return true;
+    }
+
+    if (message.action === 'EXTRACT_CONTENT') {
+      const targetTabId = message.targetTabId;
+      if (targetTabId != null) {
+        forwardToTab(targetTabId, { action: 'EXTRACT_CONTENT', payload: message.payload }, sendResponse);
+      } else {
+        forwardToContentScript({ action: 'EXTRACT_CONTENT', payload: message.payload, windowId: message.windowId }, sendResponse);
+      }
+      return true;
+    }
+
+    if (message.action === 'BATCH_INJECT') {
+      const targetTabId = message.targetTabId;
+      if (targetTabId != null) {
+        forwardToTab(targetTabId, { action: 'BATCH_INJECT', payload: message.payload }, sendResponse);
+      } else {
+        forwardToContentScript({ action: 'BATCH_INJECT', payload: message.payload, windowId: message.windowId }, sendResponse);
+      }
+      return true;
+    }
+
+    if (message.action === 'SAVE_PROFILE') {
+      handleSaveProfile(message.payload, sendResponse);
+      return true;
+    }
+    if (message.action === 'LIST_PROFILES') {
+      handleListProfiles(sendResponse);
+      return true;
+    }
+    if (message.action === 'DELETE_PROFILE') {
+      handleDeleteProfile(message.payload, sendResponse);
+      return true;
+    }
+    if (message.action === 'TOGGLE_PROFILE_AUTO_INJECT') {
+      handleToggleAutoInject(message.payload, sendResponse);
+      return true;
+    }
+
     return false;
   });
+
+  async function handleSaveProfile(payload: any, sendResponse: (r: any) => void) {
+    try {
+      const profiles = await loadProfiles();
+      const idx = profiles.findIndex((p: SiteProfile) => p.id === payload.id);
+      if (idx >= 0) {
+        profiles[idx] = { ...payload, updatedAt: Date.now() };
+      } else {
+        profiles.push(payload);
+      }
+      await chrome.storage.local.set({ [PROFILES_KEY]: profiles });
+      sendResponse({ ok: true });
+    } catch (e: any) {
+      sendResponse({ error: e?.message });
+    }
+  }
+
+  async function handleListProfiles(sendResponse: (r: any) => void) {
+    try {
+      const profiles = await loadProfiles();
+      sendResponse({ profiles });
+    } catch (e: any) {
+      sendResponse({ profiles: [], error: e?.message });
+    }
+  }
+
+  async function handleDeleteProfile(payload: any, sendResponse: (r: any) => void) {
+    try {
+      const profiles = await loadProfiles();
+      await chrome.storage.local.set({
+        [PROFILES_KEY]: profiles.filter((p: SiteProfile) => p.id !== payload.id),
+      });
+      sendResponse({ ok: true });
+    } catch (e: any) {
+      sendResponse({ error: e?.message });
+    }
+  }
+
+  async function handleToggleAutoInject(payload: any, sendResponse: (r: any) => void) {
+    try {
+      const profiles = await loadProfiles();
+      const p = profiles.find((p: SiteProfile) => p.id === payload.id);
+      if (p) {
+        p.autoInject = payload.enabled;
+        p.updatedAt = Date.now();
+        await chrome.storage.local.set({ [PROFILES_KEY]: profiles });
+      }
+      sendResponse({ ok: true });
+    } catch (e: any) {
+      sendResponse({ error: e?.message });
+    }
+  }
 
   function updateTabTools(tabId: number, tab: chrome.tabs.Tab, payload: any) {
     if (payload?.event === 'TOOLS_LIST' && Array.isArray(payload?.data)) {
@@ -217,6 +380,9 @@ export default defineBackground(() => {
   chrome.tabs.onRemoved.addListener((tabId) => {
     toolCountMap.delete(tabId);
     tabToolsMap.delete(tabId);
+    for (const key of autoInjectedTabs) {
+      if (key.startsWith(`${tabId}:`)) autoInjectedTabs.delete(key);
+    }
     broadcastToSidePanel({
       action: 'TOOL_EVENT',
       payload: { event: 'TAB_REMOVED', data: { tabId } },
@@ -414,6 +580,125 @@ export default defineBackground(() => {
         const duration = performance.now() - perfStart;
         sendToBridge({ type: 'RESPONSE', id, error: e?.message ?? String(e) });
         await saveBridgeExecution(name, args, { error: e?.message }, duration, startTime, false);
+      }
+    }
+
+    if (msg.action === 'SCAN_PAGE') {
+      const { id, tabId } = msg;
+      try {
+        let targetTabId = tabId;
+        if (targetTabId == null) {
+          const tabs = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
+          targetTabId = tabs[0]?.id;
+        }
+        if (targetTabId == null) {
+          sendToBridge({ type: 'RESPONSE', id, error: 'No active tab' });
+          return;
+        }
+        const response = await chrome.tabs.sendMessage(targetTabId, { action: 'SCAN_PAGE' });
+        sendToBridge({ type: 'RESPONSE', id, result: response });
+      } catch (e: any) {
+        sendToBridge({ type: 'RESPONSE', id, error: e?.message ?? String(e) });
+      }
+    }
+
+    if (msg.action === 'CREATE_TOOL') {
+      const { id, tabId, toolDef } = msg;
+      try {
+        let targetTabId = tabId;
+        if (targetTabId == null) {
+          const tabs = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
+          targetTabId = tabs[0]?.id;
+        }
+        if (targetTabId == null) {
+          sendToBridge({ type: 'RESPONSE', id, error: 'No active tab' });
+          return;
+        }
+        const response = await chrome.tabs.sendMessage(targetTabId, { action: 'INJECT_TOOL', payload: toolDef });
+        if (response?.success) {
+          await refreshAllTabTools();
+          pushToolsToBridge();
+        }
+        sendToBridge({ type: 'RESPONSE', id, result: response });
+      } catch (e: any) {
+        sendToBridge({ type: 'RESPONSE', id, error: e?.message ?? String(e) });
+      }
+    }
+
+    if (msg.action === 'READ_RESOURCE') {
+      const { id, tabId, contentType } = msg;
+      try {
+        let targetTabId = tabId;
+        if (targetTabId == null) {
+          for (const entry of tabToolsMap.values()) {
+            if (entry.tools.length > 0) { targetTabId = entry.tabId; break; }
+          }
+        }
+        if (targetTabId == null) {
+          const tabs = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
+          targetTabId = tabs[0]?.id;
+        }
+        if (targetTabId == null) {
+          sendToBridge({ type: 'RESPONSE', id, error: 'No active tab' });
+          return;
+        }
+        const response = await chrome.tabs.sendMessage(targetTabId, {
+          action: 'EXTRACT_CONTENT',
+          payload: { contentType },
+        });
+        sendToBridge({ type: 'RESPONSE', id, result: response });
+      } catch (e: any) {
+        sendToBridge({ type: 'RESPONSE', id, error: e?.message ?? String(e) });
+      }
+    }
+
+    if (msg.action === 'BATCH_INJECT') {
+      const { id, tabId, toolDefs } = msg;
+      try {
+        let targetTabId = tabId;
+        if (targetTabId == null) {
+          const tabs = await chrome.tabs.query({ active: true, lastFocusedWindow: true });
+          targetTabId = tabs[0]?.id;
+        }
+        if (targetTabId == null) {
+          sendToBridge({ type: 'RESPONSE', id, error: 'No active tab' });
+          return;
+        }
+        const response = await chrome.tabs.sendMessage(targetTabId, {
+          action: 'BATCH_INJECT',
+          payload: toolDefs,
+        });
+        if (!response?.error) {
+          await refreshAllTabTools();
+          pushToolsToBridge();
+        }
+        sendToBridge({ type: 'RESPONSE', id, result: response });
+      } catch (e: any) {
+        sendToBridge({ type: 'RESPONSE', id, error: e?.message ?? String(e) });
+      }
+    }
+
+    if (msg.action === 'SAVE_PROFILE') {
+      const { id, profile } = msg;
+      try {
+        const profiles = await loadProfiles();
+        const idx = profiles.findIndex((p: SiteProfile) => p.id === profile.id);
+        if (idx >= 0) profiles[idx] = { ...profile, updatedAt: Date.now() };
+        else profiles.push(profile);
+        await chrome.storage.local.set({ [PROFILES_KEY]: profiles });
+        sendToBridge({ type: 'RESPONSE', id, result: { ok: true } });
+      } catch (e: any) {
+        sendToBridge({ type: 'RESPONSE', id, error: e?.message ?? String(e) });
+      }
+    }
+
+    if (msg.action === 'LIST_PROFILES') {
+      const { id } = msg;
+      try {
+        const profiles = await loadProfiles();
+        sendToBridge({ type: 'RESPONSE', id, result: { profiles } });
+      } catch (e: any) {
+        sendToBridge({ type: 'RESPONSE', id, error: e?.message ?? String(e) });
       }
     }
   }

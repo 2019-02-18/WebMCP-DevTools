@@ -19,13 +19,7 @@
       </div>
     </header>
 
-    <nav class="tab-bar">
-      <button class="tab-bar__tab tab-bar__tab--active" data-tab="tools" data-i18n="tab.tools">Tools</button>
-      <button class="tab-bar__tab" data-tab="execute" data-i18n="tab.execute">Execute</button>
-      <button class="tab-bar__tab" data-tab="timeline" data-i18n="tab.timeline">Timeline</button>
-      <button class="tab-bar__tab" data-tab="history" data-i18n="history.title">History</button>
-      <button class="tab-bar__tab" data-tab="snapshots" data-i18n="tab.snapshots">Snapshots</button>
-      <button class="tab-bar__tab" data-tab="ai" data-i18n="tab.ai">AI</button>
+    <nav class="tab-bar" id="tab-bar">
     </nav>
 
     <main class="content">
@@ -82,6 +76,40 @@
           <div class="empty-state__icon"></div>
           <p class="empty-state__text" data-i18n="snapshots.empty_title">No snapshots saved yet.</p>
           <p class="empty-state__hint" data-i18n="snapshots.empty_hint">Save snapshots to compare tool definitions over time.</p>
+        </div>
+      </section>
+
+      <section id="panel-generator" class="panel">
+        <div class="gen-tabs">
+          <button class="gen-tab gen-tab--active" data-gen-tab="scan" data-i18n="generator.scan_tab">Scan</button>
+          <button class="gen-tab" data-gen-tab="profiles" data-i18n="generator.profiles_tab">Profiles</button>
+        </div>
+        <div id="gen-scan-panel" class="gen-sub-panel">
+          <div class="panel__toolbar">
+            <button id="generator-scan" class="btn btn--primary btn--sm" data-i18n="generator.scan">Scan Page</button>
+            <button id="generator-inject-all" class="btn btn--sm" style="display:none;" data-i18n="generator.inject_all">Inject All</button>
+            <button id="generator-save-profile" class="btn btn--sm" style="display:none;" data-i18n="generator.save_profile">Save Profile</button>
+            <span id="generator-count" class="panel__toolbar-info"></span>
+          </div>
+          <div id="generator-list" class="generator-list">
+            <div class="empty-state">
+              <div class="empty-state__icon">🔍</div>
+              <p class="empty-state__text" data-i18n="generator.empty_title">Scan the page to discover injectable elements.</p>
+              <p class="empty-state__hint" data-i18n="generator.empty_hint">Click "Scan Page" to find forms, buttons, and API endpoints that can become WebMCP tools.</p>
+            </div>
+          </div>
+        </div>
+        <div id="gen-profiles-panel" class="gen-sub-panel" style="display:none;">
+          <div class="panel__toolbar">
+            <button id="profiles-import" class="btn btn--sm" data-i18n="generator.import_profile">Import</button>
+          </div>
+          <div id="profiles-list" class="profiles-list">
+            <div class="empty-state">
+              <div class="empty-state__icon">📁</div>
+              <p class="empty-state__text" data-i18n="generator.no_profiles">No site profiles saved yet.</p>
+              <p class="empty-state__hint" data-i18n="generator.no_profiles_hint">Save injected tools as a site profile to auto-inject them on future visits.</p>
+            </div>
+          </div>
         </div>
       </section>
 

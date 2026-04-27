@@ -18,7 +18,7 @@ This extension does **not** collect any personal information, browsing history, 
 | `sidePanel` | To display the developer tool UI in Chrome's Side Panel |
 | `scripting` | To inject content scripts that detect `navigator.modelContext` tools on web pages |
 | `storage` | To save user preferences (theme, language), tool snapshots, execution history, and AI configuration locally in the browser |
-| `alarms` | To maintain stable connections between the extension and the MCP Bridge server by sending periodic keepalive signals |
+| `alarms` | To perform periodic background tasks such as refreshing tool detection status |
 | `<all_urls>` | To detect WebMCP tools on any webpage the user visits |
 
 ## Data Storage
@@ -29,9 +29,6 @@ All data (settings, snapshots, execution history, AI configuration) is stored **
 
 ### AI Assistant (Optional)
 The built-in AI assistant panel is entirely optional. If the user configures and uses it, chat messages are sent directly from the browser to the AI API endpoint configured by the user. The extension does not route, log, or store these messages on any intermediate server. The user has full control over which API endpoint is used.
-
-### MCP Bridge (Optional)
-The MCP Bridge feature allows the extension to connect to a locally running WebSocket server (localhost only) for bridging browser tools to local AI coding assistants. All communication is local (127.0.0.1) and does not traverse the internet.
 
 ## Third-Party Services
 
