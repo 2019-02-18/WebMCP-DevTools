@@ -4,7 +4,7 @@ export default defineConfig({
   manifest: {
     name: 'WebMCP DevTools',
     description: 'A developer tool for inspecting, testing, and monitoring WebMCP tools registered via navigator.modelContext.',
-    version: '2.0.0',
+    version: '2.1.0',
     permissions: ['sidePanel', 'activeTab', 'scripting', 'storage', 'alarms'],
     host_permissions: ['<all_urls>'],
     side_panel: {
